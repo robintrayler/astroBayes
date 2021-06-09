@@ -10,8 +10,6 @@
 #'
 
 plot_trace <- function(age_model) {
-  library(cowplot)
-
   plots <- list()
   for(k in 1:ncol(age_model$sed_rate)){
     dat <- data.frame(x = 1:age_model$iterations,
@@ -21,7 +19,6 @@ plot_trace <- function(age_model) {
                          mapping = aes(x = x,
                                        y = y)) +
       geom_line() +
-      # ylim(age_model$sed_prior_range) +
       xlab('iteration') +
       ylab('sed rate') +
       theme_bw()

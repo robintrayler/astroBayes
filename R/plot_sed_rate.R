@@ -11,7 +11,6 @@
 
 plot_sed_rate <- function(age_model) {
   plots <- list()
-
   for(k in 1:ncol(age_model$sed_rate)){
     dat <- data.frame(x = 1:age_model$iterations,
                       y = age_model$sed_rate[, k])

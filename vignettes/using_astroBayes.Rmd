@@ -1,0 +1,45 @@
+---
+title: "Using astroBayes"
+author: "Robin B. Trayler"
+output: rmarkdown::html_vignette
+bibliography: /Users/robintrayler/Zotero/ref_library.bib
+csl: /Users/robintrayler/Zotero/styles/geology.csl
+vignette: >
+  %\VignetteIndexEntry{my-vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Introduction
+This package contains a *very* basic method to integrate radioisotopic geochronology and cyclostratigraphy in a Bayesian framework. These methods are currently under development and is not publication ready.
+
+The package can be loaded using the `library()` function. 
+
+```{r setup}
+library(astroBayes)
+```
+
+# Background 
+
+Linking astrochronology and radioisotopic dating (e.g., ^14^C, U-Pb, ^40^Ar/^39^Ar) has the potential to improve the accuracy and precision of both methods [@kuiper2008; @meyers2012]. In this document I am attempting to link both chronometers using a Bayesian age-depth modeling framework. Age depth modeling aims to develop a model that relates stratigraphic position to age in a way that allows statistically robust predictions of age at un-dated positions [@haslett2008; @blaauw2011; @blaauw2012]. At present these models rely entirely on discrete, dated horizons, to be points anchored in absolute time. Alternatively, ashrochronology can generate "floating" time scales that are highly precise but lack anchor points. Linking the two chronometers has the potential to create an age-depth model that has the best of both, highly precise anchor points, and reduced uncertainties in stratigraphic positions that lack radioisotopic dates.
+
+So far I am incorporating astrochronology into probability calculations using the methods of @malinverno2010. The authors define the likelihood of a temporal frequency $f$ in a red noise backgrounds as:
+
+$$
+p(d|m,f) = constant \times exp \left(\frac{C_d(f)}{C_b(f)}\right)
+$$
+
+where $d$ is a cyclostratigraphic record, $m$ is a sedimentation rate model, and $f$ is a vector of tuning frequencies. $C_d(f)$ is the periodogram of the data and $C_b(f)$ is the periodogram of the red noise background.
+
+
+
+# References
+:::{#refs}
+:::

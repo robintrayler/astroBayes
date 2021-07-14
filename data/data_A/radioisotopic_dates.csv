@@ -1,4 +1,4 @@
-id,age,age_sd,position
-bent_A,0.06936691,0.01,0.64
-bent_B,0.5223987,0.02,5.17
-bent_C,1.790187,0.05,17.48
+id,age,age_sd,position,thickness
+bent_A,0.06936691,0.01,0.64,2
+bent_B,0.5223987,0.02,5.17,2
+bent_C,1.790187,0.05,17.48,2

@@ -13,8 +13,8 @@ plot_pgram <- function(age_model) {
   plots <- list()
   for(k in 1:ncol(age_model$sed_rate)) {
     pgram <- age_model$cyclostrat_data %>%
-      filter(position > age_model$segment_edges[k] &
-               position < age_model$segment_edges[k + 1]) %>%
+      filter(position > age_model$segment_edges$position[k] &
+               position < age_model$segment_edges$position[k + 1]) %>%
       periodogram(output = 1,
                   verbose = FALSE,
                   genplot = FALSE,
@@ -32,9 +32,9 @@ plot_pgram <- function(age_model) {
                  mapping = aes(xintercept = frequency,
                                color = orbital_cycle),
                  linetype = 'dashed') +
-      ggtitle(label = paste(age_model$segment_edges[k],
+      ggtitle(label = paste(age_model$segment_edges$position[k],
                             '-',
-                            age_model$segment_edges[k + 1],
+                            age_model$segment_edges$position[k + 1],
                             'meters',
                             '; mean sed rate = ',
                             round(mean(age_model$sed_rate[, k],
@@ -46,7 +46,7 @@ plot_pgram <- function(age_model) {
       theme_bw() +
       theme(legend.position = 'none')
   }
-  plot_grid(plotlist = plots,
+  cowplot::plot_grid(plotlist = plots,
             labels = 'AUTO',
             nrow = length(plots))
 }

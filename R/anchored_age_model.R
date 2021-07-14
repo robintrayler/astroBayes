@@ -51,31 +51,36 @@ anchored_age_model <- function(geochron_data,
                                tuning_frequency,
                                segment_edges,
                                sed_prior_range,
-                               sed_mhsd = rep(0.05, length(segment_edges) - 1),
+                               sed_mhsd = rep(0.05, nrow(segment_edges) - 1),
                                anchor_mhsd = 0.01,
                                iterations = 100000,
                                burn = 5000) {
-
-  # load required functions ---------------------------------------------------
-  # this won't be necessary once the code is compiled as a package
-  # source('./R/adaptiveProposal.r')
-  # source('./R/sed_prior.R')
-  # source('./R/pgram_likelihood.R')
-  # source('./R/anchor_sed_model.R')
-  # source('./R/radio_likelihood.R')
-
   # Need a whole bunch of error checking here ---------------------------------
+
+  # check to make sure columns are named correctly
+  if ((colnames(geochron_data) %in%
+       c("id", "age", "age_sd", "position", "thickness")) %>%
+      all()) {cat('geochron_data column names correct')} else {
+        cat('ERROR: column names for geochron_data must be *exactly*:
+          \n "id", "age", "age_sd", "position", "thickness")')
+        stop("**** TERMINATING NOW")
+      }
+
+  # check to make sure things are in order
+  geochron_data <- geochron_data %>% arrange(position)
+  cyclostrat_data <- cyclostrat_data %>% arrange(position)
 
   # define interpolation grid -------------------------------------------------
   position_grid <- seq(from = min(c(cyclostrat_data$position, geochron_data$position)),
-              to = max(c(cyclostrat_data$position, geochron_data$position)),
-              length = 5000)
+                       to = max(c(cyclostrat_data$position, geochron_data$position)),
+                       length = 5000)
 
   # set up model storage ------------------------------------------------------
-  # store the sed rate for each segment
+  # store the sedimentation rate for each segment
   sed_rate <- sed_rate <- matrix(nrow = iterations,
-                                 ncol = length(segment_edges) - 1)
+                                 ncol = nrow(segment_edges) - 1)
 
+  master_edges <- segment_edges
   # store all probabilities and anchor point
   parameter_storage <- data.frame(
     anchor_point = vector(length = iterations),
@@ -102,20 +107,20 @@ anchored_age_model <- function(geochron_data,
     dplyr::nth(2)
 
   # randomly adjust starting rates
-  sed_rate[1, ] <- rnorm(length(segment_edges) - 1,
+  sed_rate[1, ] <- rnorm(nrow(segment_edges) - 1,
                          mean = mean_rate,
                          sd = sed_mhsd)
   rm(mean_rate)
 
   # anchor the initial model in time
-  anchored_model <- anchor_sed_model(segment_edges,
+  anchored_model <- anchor_sed_model(segment_edges$position,
                                      sed_rate[1, ],
                                      parameter_storage$anchor_point[1])
 
   # calculate initial probabilities -------------------------------------------
   # sed rate likelihood
   parameter_storage$pgram_LL[1]     <- pgram_likelihood(sed_rate[1, ],
-                                                        segment_edges,
+                                                        segment_edges$position,
                                                         cyclostrat_data,
                                                         tuning_frequency$frequency)
   # sed rate prior
@@ -124,24 +129,28 @@ anchored_age_model <- function(geochron_data,
                                                  max(sed_prior_range))
 
   # calculate radiometric probability
-  parameter_storage$radio_LL[1]     <- radio_likelihood(segment_edges,
+  parameter_storage$radio_LL[1]     <- radio_likelihood(segment_edges$position,
                                                         anchored_model,
                                                         geochron_data$age,
                                                         geochron_data$age_sd,
-                                                        geochron_data$position)
+                                                        runif(nrow(geochron_data),
+                                                              min = geochron_data$position - geochron_data$thickness / 2,
+                                                              max = geochron_data$position + geochron_data$thickness / 2))
   # calculate joint probability
   parameter_storage$bayes_LL[1]     <- parameter_storage$pgram_LL[1] +
     parameter_storage$sed_prior_LL[1] +
     parameter_storage$radio_LL[1]
 
   # interpolate and store the model -------------------------------------------
-  f <- approxfun(x = segment_edges,
+  f <- approxfun(x = segment_edges$position,
                  y = anchored_model)
   model_storage[, 1] <- f(position_grid)
   rm(f)
+
   # run the MCMC model ----------------------------------------------------------
   pb <- progress::progress_bar$new(total = iterations,
                                    format = '[:bar] :percent eta: :eta')
+
 
   for(j in 2:iterations){
     # update progress bar
@@ -153,23 +162,28 @@ anchored_age_model <- function(geochron_data,
     parameter_storage[j, ] <- parameter_storage[j - 1, ]
 
     # propose new sed rates. use a gamma dist. to keep it from going negative
-    new_rates <- rgamma(ncol(sed_rate),
-                        shape = sed_rate[j - 1, ] ^ 2 / sed_mhsd ^ 2,
-                        rate  = sed_rate[j - 1, ]  / sed_mhsd ^ 2)
+      new_rates <- rgamma(ncol(sed_rate),
+                          shape = sed_rate[j - 1, ] ^ 2 / sed_mhsd ^ 2,
+                          rate  = sed_rate[j - 1, ]  / sed_mhsd ^ 2)
 
-    # adjust anchor point. No need to worry about this one going negitive
+    # adjust anchor point. No need to worry about this one going negative
     new_anchor <- rnorm(1,
                         mean = parameter_storage$anchor_point[j - 1],
                         sd = anchor_mhsd)
 
+    # update segment edges ----------------------------------------------------
+    segment_edges$position <- runif(nrow(master_edges),
+                                    min = master_edges$position - master_edges$thickness,
+                                    max = master_edges$position + master_edges$thickness)
+
     # anchor the model in time
-    anchored_model <- anchor_sed_model(segment_edges,
+    anchored_model <- anchor_sed_model(segment_edges$position,
                                        new_rates,
                                        new_anchor)
 
     # calculate probabilities of new model ------------------------------------
     pgram_proposed <- pgram_likelihood(new_rates,
-                                       segment_edges,
+                                       segment_edges$position,
                                        cyclostrat_data,
                                        tuning_frequency$frequency)
     # sed rate prior
@@ -178,11 +192,13 @@ anchored_age_model <- function(geochron_data,
                                     max(sed_prior_range))
 
     # calculate radiometric probability
-    radio_proposed <- radio_likelihood(segment_edges,
+    radio_proposed <- radio_likelihood(segment_edges$position,
                                        anchored_model,
                                        geochron_data$age,
                                        geochron_data$age_sd,
-                                       geochron_data$position)
+                                       runif(nrow(geochron_data),
+                                             min = geochron_data$position - geochron_data$thickness / 2,
+                                             max = geochron_data$position + geochron_data$thickness / 2))
 
     # calculate joint probability
     bayes_LL <- pgram_proposed + sed_prior_proposed + radio_proposed
@@ -193,7 +209,7 @@ anchored_age_model <- function(geochron_data,
                        no   = bayes_LL)
 
 
-    # use a metroplis hasting algorithm to accept or reject
+    # use a metropolis hasting algorithm to accept or reject
     if(exp(bayes_LL - parameter_storage$bayes_LL[j - 1]) > runif(1)){
       parameter_storage$pgram_LL[j] <- pgram_proposed
       parameter_storage$sed_prior_LL[j] <- sed_prior_proposed
@@ -201,15 +217,16 @@ anchored_age_model <- function(geochron_data,
       parameter_storage$bayes_LL[j] <- bayes_LL
       parameter_storage$anchor_point[j] <- new_anchor
       sed_rate[j, ]   <- new_rates
+      # segment_storage[j, ]   <- segment_edges$position
 
       # interpolate the model onto a grid
-      f <- approxfun(x = segment_edges,
+      f <- approxfun(x = segment_edges$position,
                      y = anchored_model)
       model_storage[, j] <- f(position_grid)
     }
   }
 
-  # clean up the results and orginize for output ------------------------------
+  # clean up the results and organize for output ------------------------------
 
   # calculate credible interval minus burn in
   CI <- apply(X = model_storage[, burn:iterations],
@@ -229,7 +246,7 @@ anchored_age_model <- function(geochron_data,
                 burn = burn,
                 model_iterations = model_storage,
                 sed_rate = sed_rate,
-                segment_edges = segment_edges,
+                segment_edges = master_edges,
                 geochron_data = geochron_data,
                 cyclostrat_data = cyclostrat_data,
                 sed_prior_range = sed_prior_range,

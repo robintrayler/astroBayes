@@ -23,7 +23,7 @@ plot_trace <- function(age_model) {
       ylab('sed rate') +
       theme_bw()
   }
-  plot_grid(plotlist = plots,
+  cowplot::plot_grid(plotlist = plots,
             labels = 'AUTO',
             nrow = length(plots))
 }

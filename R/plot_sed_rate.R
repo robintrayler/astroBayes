@@ -24,7 +24,7 @@ plot_sed_rate <- function(age_model) {
       xlab('sed rate (m/Ma)') +
       theme_bw()
   }
-  plot_grid(plotlist = plots,
+  cowplot::plot_grid(plotlist = plots,
             labels = 'AUTO',
             nrow = length(plots))
 

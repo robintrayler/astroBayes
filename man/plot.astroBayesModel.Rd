@@ -4,10 +4,20 @@
 \alias{plot.astroBayesModel}
 \title{plots the age model}
 \usage{
-\method{plot}{astroBayesModel}(age_model)
+\method{plot}{astroBayesModel}(age_model, type = c("age_depth", "sed_rate", "trace", "periodogram"))
 }
 \arguments{
 \item{age_model}{the output of \code{astro_bayes_model}}
+
+\item{type}{type of plot to make. Possible options are
+\itemize{
+\item age_depth: plots the geochrologic data where age is on the x axis and depth
+is on the y axis.
+\item sed_rate: plots the posterior density of sedimentation rate for each segment
+\item trace: plots the trace plot for each segment
+\item periodogram: plots the  periodogram for each segment scaled to the median
+sedimentation rate for that segment
+}}
 }
 \value{
 a list with a whole bunch of stuff in it.

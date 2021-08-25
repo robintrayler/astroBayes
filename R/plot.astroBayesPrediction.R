@@ -10,7 +10,7 @@
 
 plot.astroBayesPrediction <- function(age_predictions) {
   # plot the original age model -----------------------------------------------
-  p <- age_predictions$age_model %>% plot()
+  p <- age_predictions$age_model %>% plot(type = 'age_depth')
 
   # add the error bars for the new points -------------------------------------
   p <- p + geom_point(data = age_predictions$CI,

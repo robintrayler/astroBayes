@@ -63,12 +63,12 @@ age_depth_plot <- function(age_model) {
               inherit.aes = FALSE) +
     theme_bw() +
     theme(legend.position = 'top') +
-    scale_color_viridis(discrete = TRUE, option = 'H')
+    scale_color_viridis(discrete = TRUE, option = 'D', end = 0.9)
 }
 ###############################################################################
 plot_sed_rate <- function(age_model) {
   plots <- list()
-  colors <- viridis(n = ncol(age_model$sed_rate), option = 'D')
+  colors <- viridis(n = ncol(age_model$sed_rate), option = 'D',  end = 0.9)
   for(k in 1:ncol(age_model$sed_rate)){
     dat <- data.frame(x = age_model$burn:age_model$iterations,
                       y = age_model$sed_rate[age_model$burn:age_model$iterations, k])
@@ -78,7 +78,7 @@ plot_sed_rate <- function(age_model) {
       geom_density(fill = colors[k],
                    alpha = 0.75,
                    color = NA) +
-      xlim(range(age_model$sed_rate[age_model$burn:age_model$iterations, ])) +
+      xlim(range(age_model$sed_rate[age_model$burn:age_model$iterations, k])) +
       xlab('sed rate (m/Ma)') +
       theme_bw() +
       ggtitle(label = paste(age_model$segment_edges$position[k],
@@ -86,19 +86,24 @@ plot_sed_rate <- function(age_model) {
                             age_model$segment_edges$position[k + 1],
                             'meters',
                             '; median sed rate = ',
-                            round(mean(age_model$sed_rate[, k],
-                                       na.rm = TRUE), 2),
-                            'm/Ma'))
+                            round(quantile(age_model$sed_rate[age_model$burn:age_model$iterations, k],
+                                           na.rm = TRUE,
+                                           prob = 0.5), 2),
+                            'm/Ma')) +
+      geom_vline(xintercept = quantile(age_model$sed_rate[age_model$burn:age_model$iterations, k],
+                                       na.rm = TRUE,
+                                       prob = 0.5),
+                 linetype = 'dashed',
+                 color = 'red')
   }
-  cowplot::plot_grid(plotlist = plots,
-                     nrow = length(plots))
+  cowplot::plot_grid(plotlist = plots)
 
 }
 
 ###############################################################################
 plot_trace <- function(age_model) {
   plots <- list()
-  colors <- viridis(n = ncol(age_model$sed_rate), option = 'D')
+  colors <- viridis(n = ncol(age_model$sed_rate), option = 'D', end = 0.9)
   for(k in 1:ncol(age_model$sed_rate)){
     dat <- data.frame(x = 1:age_model$iterations,
                       y = age_model$sed_rate[, k])
@@ -106,7 +111,7 @@ plot_trace <- function(age_model) {
     plots[[k]] <- ggplot(data = dat,
                          mapping = aes(x = x,
                                        y = y)) +
-      geom_line(color = colors[k]) +
+      geom_line(color = colors[k], alpha = 0.5) +
       xlab('iteration') +
       ylab('sed rate') +
       theme_bw() +
@@ -115,18 +120,24 @@ plot_trace <- function(age_model) {
                             age_model$segment_edges$position[k + 1],
                             'meters',
                             '; median sed rate = ',
-                            round(mean(age_model$sed_rate[, k],
-                                       na.rm = TRUE), 2),
-                            'm/Ma'))
+                            round(quantile(age_model$sed_rate[age_model$burn:age_model$iterations, k],
+                                           na.rm = TRUE,
+                                           prob = 0.5),
+                                  2),
+                            'm/Ma')) +
+      geom_hline(yintercept = quantile(age_model$sed_rate[age_model$burn:age_model$iterations, k],
+                                       na.rm = TRUE,
+                                       prob = 0.5),
+                 linetype = 'dashed',
+                 color = 'red')
   }
-  p <- cowplot::plot_grid(plotlist = plots,
-                          nrow = length(plots))
-  p
+  cowplot::plot_grid(plotlist = plots)
 }
 
 ###############################################################################
 plot_pgram <- function(age_model) {
   plots <- list()
+  colors <- viridis(n = ncol(age_model$sed_rate), option = 'D', end = 0.9)
   for(k in 1:ncol(age_model$sed_rate)) {
     pgram <- age_model$cyclostrat_data %>%
       filter(position > age_model$segment_edges$position[k] &
@@ -139,16 +150,16 @@ plot_pgram <- function(age_model) {
              probability = probability / sum(probability),
              time_freq   = Frequency * quantile(age_model$sed_rate[age_model$burn:age_model$iterations, k],
                                                 prob = 0.5,
-                                            na.rm = TRUE))
+                                                na.rm = TRUE))
 
     plots[[k]] <- pgram %>%
       ggplot(mapping = aes(x = time_freq,
                            y = probability)) +
-      geom_line() +
+      geom_line(color = colors[k]) +
       geom_vline(data = age_model$tuning_frequency,
-                 mapping = aes(xintercept = frequency,
-                               color = orbital_cycle),
-                 linetype = 'dashed') +
+                 mapping = aes(xintercept = frequency),
+                 linetype = 'dashed',
+                 color = 'red') +
       ggtitle(label = paste(age_model$segment_edges$position[k],
                             '-',
                             age_model$segment_edges$position[k + 1],
@@ -161,7 +172,8 @@ plot_pgram <- function(age_model) {
       theme(legend.position = 'none',
             axis.text.y = element_blank()) +
       xlab('frequency (m/Ma)') +
-      theme(legend.position = 'none')
+      theme(legend.position = 'none') +
+      scale_color_viridis(discrete = TRUE, option = 'D', end = 0.9)
   }
   cowplot::plot_grid(plotlist = cowplot::align_plots(plotlist = plots))
 }

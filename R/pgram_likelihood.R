@@ -24,7 +24,6 @@ pgram_likelihood <- function(sed_rate,
              time_freq   = Frequency * sed_rate[i]) %>%
       with(approxfun(x = time_freq,
                      y = probability))
-
     # calculate probability of tuning frequencies
     LL[i] <- f(tuning_frequency) %>% log() %>% sum()
   }

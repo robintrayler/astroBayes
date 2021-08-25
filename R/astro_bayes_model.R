@@ -55,9 +55,9 @@ astro_bayes_model <- function(geochron_data,
   cyclostrat_data <- cyclostrat_data %>% arrange(position)
 
   # define interpolation grid -------------------------------------------------
-  position_grid <- seq(from = min(c(cyclostrat_data$position, geochron_data$position)),
-                       to = max(c(cyclostrat_data$position, geochron_data$position)),
-                       length = 100)
+  position_grid <- seq(from = min(segment_edges$position),
+                       to   = max(segment_edges$position),
+                       length = 1000)
 
   # set up model storage ------------------------------------------------------
   # store the sedimentation rate for each segment
@@ -98,8 +98,6 @@ astro_bayes_model <- function(geochron_data,
                                      sed_rate[1, ],
                                      anchor_point[1])
 
-
-
   # interpolate and store the model -------------------------------------------
   f <- approxfun(x = segment_edges$position,
                  y = anchored_model)
@@ -109,7 +107,6 @@ astro_bayes_model <- function(geochron_data,
   # run the MCMC model ----------------------------------------------------------
   pb <- progress::progress_bar$new(total = iterations,
                                    format = '[:bar] :percent eta: :eta')
-
 
   for(j in 2:iterations) {
     # update progress bar
@@ -227,5 +224,3 @@ astro_bayes_model <- function(geochron_data,
   class(output) <- "astroBayesModel"
 return(output)
 }
-
-

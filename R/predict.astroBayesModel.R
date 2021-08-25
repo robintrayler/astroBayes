@@ -18,8 +18,12 @@ predict.astroBayesModel <- function(age_model, new_positions) {
   # preallocate storage -------------------------------------------------------
   predict_store <- matrix(nrow = age_model$iterations,
                           ncol = nrow(new_positions))
+
+  pb <- progress::progress_bar$new(total = age_model$iterations,
+                                   format = '[:bar] :percent eta: :eta')
   for(i in seq_along(1:age_model$iterations)) {
-    # form interpolation function -------------------------
+    pb$tick()
+    # form interpolation function ---------------------------------------------
     f <- approxfun(x = age_model$CI$grid,
                    y = age_model$model_iterations[, i])
 
@@ -31,7 +35,6 @@ predict.astroBayesModel <- function(age_model, new_positions) {
                                   new_positions$thickness/2) %>%
       f()
   }
-
   # organize storage ----------------------------------------------------------
   posterior_sample <- predict_store %>%
     as.data.frame() %>%

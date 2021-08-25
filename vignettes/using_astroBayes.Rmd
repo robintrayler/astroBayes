@@ -43,7 +43,14 @@ where $d$ is a cyclostratigraphic record, $m$ is a sedimentation rate model, and
 
 This package relies on 4 core data files that **must** folow a specific format:
 * Geochronologic data (e.g., ^14^C, U-Pb, ^40^Ar/^39^Ar) where the columns names 
-* 
+
+
+```{r}
+
+
+
+```
+
 
 # References
 :::{#refs}

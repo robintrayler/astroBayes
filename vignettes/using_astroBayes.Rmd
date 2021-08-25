@@ -38,7 +38,12 @@ $$
 
 where $d$ is a cyclostratigraphic record, $m$ is a sedimentation rate model, and $f$ is a vector of tuning frequencies. $C_d(f)$ is the periodogram of the data and $C_b(f)$ is the periodogram of the red noise background.
 
+# Using `astroBayes`
+## Data file formatting
 
+This package relies on 4 core data files that **must** folow a specific format:
+* Geochronologic data (e.g., ^14^C, U-Pb, ^40^Ar/^39^Ar) where the columns names 
+* 
 
 # References
 :::{#refs}

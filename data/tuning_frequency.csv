@@ -1,10 +1,10 @@
 frequency,orbital_cycle
-2.46500008,long eccentricity
-7.649997323,eccentricity2
-8.075000606,eccentricity2
-10.11500047,eccentricity3
-10.54000004,eccentricity3
-27.02703,obliquity
+2.46500008,eccentricity
+7.649997323,eccentricity
+8.075000606,eccentricity
+10.11500047,eccentricity
+10.54000004,eccentricity
+24.41,obliquity
 42.33576581,precession
 44.80551717,precession
 52.44476517,precession

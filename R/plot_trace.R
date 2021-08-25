@@ -27,3 +27,4 @@ plot_trace <- function(age_model) {
             labels = 'AUTO',
             nrow = length(plots))
 }
+

@@ -46,15 +46,15 @@
 #' @md
 #' @export
 #'
-anchored_age_model <- function(geochron_data,
-                               cyclostrat_data,
-                               tuning_frequency,
-                               segment_edges,
-                               sed_prior_range,
-                               sed_mhsd = rep(0.05, nrow(segment_edges) - 1),
-                               anchor_mhsd = 0.01,
-                               iterations = 100000,
-                               burn = 5000) {
+anchored_age_model_2 <- function(geochron_data,
+                                 cyclostrat_data,
+                                 tuning_frequency,
+                                 segment_edges,
+                                 sed_prior_range,
+                                 sed_mhsd = rep(0.05, nrow(segment_edges) - 1),
+                                 anchor_mhsd = 0.01,
+                                 iterations = 100000,
+                                 burn = 5000) {
   # Need a whole bunch of error checking here ---------------------------------
 
   # check to make sure columns are named correctly
@@ -73,7 +73,7 @@ anchored_age_model <- function(geochron_data,
   # define interpolation grid -------------------------------------------------
   position_grid <- seq(from = min(c(cyclostrat_data$position, geochron_data$position)),
                        to = max(c(cyclostrat_data$position, geochron_data$position)),
-                       length = 500)
+                       length = 5000)
 
   # set up model storage ------------------------------------------------------
   # store the sedimentation rate for each segment
@@ -109,7 +109,7 @@ anchored_age_model <- function(geochron_data,
   # randomly adjust starting rates
   sed_rate[1, ] <- rnorm(nrow(segment_edges) - 1,
                          mean = mean_rate,
-                         sd = 0.001)
+                         sd = sed_mhsd)
   rm(mean_rate)
 
   # anchor the initial model in time
@@ -162,32 +162,21 @@ anchored_age_model <- function(geochron_data,
     parameter_storage[j, ] <- parameter_storage[j - 1, ]
 
     # propose new sed rates. use a gamma dist. to keep it from going negative
-    # new_rates <- rgamma(ncol(sed_rate),
-    #                     shape = sed_rate[j - 1, ] ^ 2 / sed_mhsd ^ 2,
-    #                     rate  = sed_rate[j - 1, ]  / sed_mhsd ^ 2)
+    # update one rate at a time
+    new_rates <- sed_rate[j - 1, ]
+    delta <- sample(x = 1:ncol(sed_rate), 1)
+    new_rates[delta] <- rgamma(1,
+                               shape = sed_rate[j - 1, delta] ^ 2 / sed_mhsd[delta] ^ 2,
+                               rate  = sed_rate[j - 1, delta]  / sed_mhsd[delta] ^ 2)
 
-    new_rates <- vector()
-    for(q in 1:ncol(sed_rate)){
-      new_rates[q] <- adaptive_update(chain = sed_rate[, q],
-                                      i = j,
-                                      start_index = 100,
-                                      initial_Cd = 0.001,
-                                      distribution = 'gamma')
+    # update 50% OF THE TIME
+    if(runif(1) > 0.5){
+      new_anchor <- rnorm(1,
+                          mean = parameter_storage$anchor_point[j - 1],
+                          sd = anchor_mhsd)
+    } else {
+      new_anchor <- parameter_storage$anchor_point[j - 1]
     }
-
-
-    # adjust anchor point. No need to worry about this one going negative
-
-    # new_anchor <- rnorm(1,
-    #                     mean = parameter_storage$anchor_point[j - 1],
-    #                     sd = anchor_mhsd)
-
-    new_anchor <- adaptive_update(chain = parameter_storage$anchor_point,
-                                  i = j,
-                                  start_index = 100,
-                                  initial_Cd = 0.0001,
-                                  distribution = 'gaussian')
-
     # update segment edges ----------------------------------------------------
     segment_edges$position <- runif(nrow(master_edges),
                                     min = master_edges$position - master_edges$thickness,

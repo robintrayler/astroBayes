@@ -21,7 +21,7 @@ plot_pgram <- function(age_model) {
                   background = 1) %>%
       mutate(probability = Power / AR1_Fit,
              probability = probability / sum(probability),
-             time_freq   = Frequency * mean(age_model$sed_rate[, k],
+             time_freq   = Frequency * mean(age_model$sed_rate[age_model$burn:age_model$iterations, k],
                                             na.rm = TRUE))
 
     plots[[k]] <- pgram %>%

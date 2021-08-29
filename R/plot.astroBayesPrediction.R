@@ -1,9 +1,12 @@
 #' plots the age model with error bars for new predictions
 #' @param age_predictions the output of \code{predict.astroBayesModel}
 #'
-#' @import "ggplot2"
+#'  @import "tidyverse"
+#' @import "dplyr"
+#' @import "astrochron"
 #' @import "cowplot"
-#' @import "viridis"
+#' @import "tibble"
+#' @importFrom magrittr "%>%"
 #' @md
 #' @export
 #'

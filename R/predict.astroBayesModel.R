@@ -10,6 +10,13 @@
 #' range of \code{age_model}
 #' * thickness: positional uncertainty is treated as a uniform distributions where the total
 #' range equals position ± thickness ÷ 2
+#'
+#' @import "tidyverse"
+#' @import "dplyr"
+#' @import "astrochron"
+#' @import "tibble"
+#' @import "rlang"
+#' @importFrom magrittr "%>%"
 #' @md
 #' @export
 #
@@ -38,7 +45,7 @@ predict.astroBayesModel <- function(age_model, new_positions) {
   # organize storage ----------------------------------------------------------
   posterior_sample <- predict_store %>%
     as.data.frame() %>%
-    set_names(nm = new_positions$id)
+    rlang::set_names(nm = new_positions$id)
 
   # calculate credible interval -----------------------------------------------
   credible_interval <- apply(X = posterior_sample[age_model$burn:age_model$iterations, ],
@@ -47,7 +54,7 @@ predict.astroBayesModel <- function(age_model, new_positions) {
                              prob = c(0.025, 0.5, 0.975)) %>%
     t() %>%
     as.data.frame() %>%
-    set_names(nm = c('CI_2.5', 'median', 'CI_97.5')) %>%
+    rlang::set_names(nm = c('CI_2.5', 'median', 'CI_97.5')) %>%
     add_column(position = new_positions$position,
                thickness = new_positions$thickness,
                id = new_positions$id)

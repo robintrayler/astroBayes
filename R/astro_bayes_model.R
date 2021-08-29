@@ -124,7 +124,6 @@ astro_bayes_model <- function(geochron_data,
                                    min = master_geochron$position - master_geochron$thickness / 2,
                                    max = master_geochron$position + master_geochron$thickness / 2)
     # update sed rates --------------------------------------------------------
-    sed_rate[j, ] <- sed_rate[j - 1, ]
     for(q in 1:ncol(sed_rate)) {
       # propose a new rate ------------------------------------------
       proposed_rate <- adaptive_update(chain = sed_rate[, q],
@@ -188,39 +187,44 @@ astro_bayes_model <- function(geochron_data,
                                       geochron_data$age_sd,
                                       position = geochron_data$position)
 
-    if(exp(radio_proposed - radio_current) > runif(1)) {
-      anchor_point[j] <- new_anchor
-      f <- approxfun(x = segment_edges$position,
-                     y = model_proposed)
-      model_storage[, j] <- f(position_grid)
+    a <- radio_proposed - radio_current
+
+    if(!is.na(a)) {
+      if(!is.infinite(a)) {
+        if(exp(a) > runif(1)) {
+          anchor_point[j] <- new_anchor
+          f <- approxfun(x = segment_edges$position,
+                         y = model_proposed)
+          model_storage[, j] <- f(position_grid)
+        }
+      }
     }
+
+    # clean up the results and organize for output ------------------------------
+    # calculate credible interval minus burn in
+    CI <- apply(X = model_storage[, burn:iterations],
+                MARGIN = 1,
+                FUN = quantile,
+                prob = c(0.025, 0.5, 0.975),
+                na.rm = TRUE) %>%
+      t() %>%
+      data.frame()
+
+    names(CI) <- c('CI_2.5', 'median', 'CI_97.5')
+    CI <- CI %>% add_column(grid = position_grid)
+
+    output = list(CI = CI,
+                  anchor_point = anchor_point,
+                  iterations = iterations,
+                  burn = burn,
+                  model_iterations = model_storage,
+                  sed_rate = sed_rate,
+                  segment_edges = master_edges,
+                  geochron_data = master_geochron,
+                  cyclostrat_data = cyclostrat_data,
+                  sed_prior_range = sed_prior_range,
+                  tuning_frequency = tuning_frequency)
+    class(output) <- "astroBayesModel"
+    return(output)
   }
-
-  # clean up the results and organize for output ------------------------------
-  # calculate credible interval minus burn in
-  CI <- apply(X = model_storage[, burn:iterations],
-              MARGIN = 1,
-              FUN = quantile,
-              prob = c(0.025, 0.5, 0.975),
-              na.rm = TRUE) %>%
-    t() %>%
-    data.frame()
-
-  names(CI) <- c('CI_2.5', 'median', 'CI_97.5')
-
-  CI <- CI %>% add_column(grid = position_grid)
-
-  output = list(CI = CI,
-                anchor_point = anchor_point,
-                iterations = iterations,
-                burn = burn,
-                model_iterations = model_storage,
-                sed_rate = sed_rate,
-                segment_edges = master_edges,
-                geochron_data = master_geochron,
-                cyclostrat_data = cyclostrat_data,
-                sed_prior_range = sed_prior_range,
-                tuning_frequency = tuning_frequency)
-  class(output) <- "astroBayesModel"
-return(output)
 }

@@ -2,5 +2,5 @@ position,thickness,hiatus_boundary
 0,0,FALSE
 13.5,0,FALSE
 18.5,0,FALSE
-22.5,0,FALSE
+22.5,0,TRUE
 30,0,FALSE

@@ -7,7 +7,9 @@
 \method{plot}{astroBayesPrediction}(age_predictions)
 }
 \arguments{
-\item{age_predictions}{the output of \code{predict.astroBayesModel}}
+\item{age_predictions}{the output of \code{predict.astroBayesModel}
+
+@import "tidyverse"}
 }
 \description{
 plots the age model with error bars for new predictions

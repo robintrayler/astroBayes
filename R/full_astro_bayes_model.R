@@ -1,7 +1,7 @@
 #' Run a modified version of the algorithm from Malinverno et al., 2010 with an additional
 #' modified to anchor the resulting age model using radioisotopic (e.g., U-Pb Ar/Ar) geochronology
 #'
-#' @name astro_bayes_model
+#' @name full_astro_bayes_model
 #'
 #' @param geochron_data data frame containing radiometric age determinations, their uncertainties and stratigraphic positions, and a identifier variable.
 #' column headers *must* be named exactly as follows:
@@ -41,13 +41,14 @@
 #' @md
 #' @export
 
-astro_bayes_model <- function(geochron_data,
-                              cyclostrat_data,
-                              tuning_frequency,
-                              segment_edges,
-                              sed_prior_range,
-                              iterations = 100000,
-                              burn = 5000) {
+full_astro_bayes_model <- function(geochron_data,
+                                   cyclostrat_data,
+                                   tuning_frequency,
+                                   segment_edges,
+                                   sed_prior_range,
+                                   iterations = 100000,
+                                   burn = 5000,
+                                   method = 'full') {
   # Need a whole bunch of error checking here ---------------------------------
 
   # check to make sure things are in order
@@ -109,8 +110,9 @@ astro_bayes_model <- function(geochron_data,
                                    format = '[:bar] :percent eta: :eta')
 
   for(j in 2:iterations) {
+    print(j)
     # update progress bar
-    pb$tick()
+    # pb$tick()
     # store the previous iterations in case things get rejected ---------------
     sed_rate[j, ] <- sed_rate[j - 1, ]
     model_storage[, j] <- model_storage[, j - 1]
@@ -125,27 +127,27 @@ astro_bayes_model <- function(geochron_data,
                                    max = master_geochron$position + master_geochron$thickness / 2)
     # update sed rates --------------------------------------------------------
     for(q in 1:ncol(sed_rate)) {
-      # propose a new rate ------------------------------------------
-      proposed_rate <- adaptive_update(chain = sed_rate[, q],
-                                       i = j,
-                                       start_index = burn/2,
-                                       initial_Cd = 0.001,
-                                       distribution = 'gamma')
+      tmp_rates <- sed_rate[j, ]
+      tmp_rates[q] <- adaptive_update(chain = sed_rate[, q],
+                                      i = j,
+                                      start_index = burn / 2,
+                                      initial_Cd = 0.001,
+                                      distribution = 'gamma')
 
-      # calculate the probability -----------------------------------
-      proposed_prob <- pgram_likelihood(sed_rate = proposed_rate,
-                                        segment_edges = segment_edges$position[q:(q + 1)],
-                                        cyclostrat = cyclostrat_data,
-                                        tuning_frequency = tuning_frequency$frequency)
+      proposed_prob <- full_pgram_likelihood(sed_rate = tmp_rates,
+                                             segment_edges = segment_edges$position,
+                                             cyclostrat = cyclostrat_data,
+                                             tuning_frequency = tuning_frequency$frequency)
 
-      prior_proposed <- sed_prior(proposed_rate,
+      prior_proposed <- sed_prior(tmp_rates[q],
                                   min(sed_prior_range),
                                   max(sed_prior_range))
-      current_prob  <- pgram_likelihood(sed_rate = sed_rate[j - 1, q],
-                                        segment_edges = segment_edges$position[q:(q + 1)],
-                                        cyclostrat = cyclostrat_data,
-                                        tuning_frequency = tuning_frequency$frequency)
-      prior_current <- sed_prior(sed_rate[j - 1, q],
+
+      current_prob <- full_pgram_likelihood(sed_rate = sed_rate[j-1, ],
+                                            segment_edges = segment_edges$position,
+                                            cyclostrat = cyclostrat_data,
+                                            tuning_frequency = tuning_frequency$frequency)
+      prior_current <- sed_prior(sed_rate[j-1, q],
                                  min(sed_prior_range),
                                  max(sed_prior_range))
 
@@ -154,11 +156,12 @@ astro_bayes_model <- function(geochron_data,
       if(!is.na(a)) {
         if(!is.infinite(a)) {
           if(exp(a) > runif(1)) {
-            sed_rate[j, q] <- proposed_rate
+            sed_rate[j, ] <- tmp_rates
           }
         }
       }
     }
+
 
     # anchor the model in time --------------------------------------------------
     new_anchor <- adaptive_update(chain = anchor_point,

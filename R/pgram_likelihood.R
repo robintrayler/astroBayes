@@ -7,11 +7,11 @@ pgram_likelihood <- function(sed_rate,
                              segment_edges,
                              cyclostrat,
                              tuning_frequency){
-  # storage
+  # preallocate storage -------------------------------------------------------
   LL <- vector(length = length(sed_rate))
 
   for(i in 1:length(sed_rate)) {
-    # loop through all segments an calculate scaled periodogram
+    # loop through all segments an calculate scaled periodogram ---------------
     f <- cyclostrat %>%
       filter(position > segment_edges[i] &
                position < segment_edges[i + 1]) %>%

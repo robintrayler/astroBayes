@@ -26,31 +26,39 @@ The package can be loaded using the `library()` function.
 library(astroBayes)
 ```
 
-# Background 
-
-Linking astrochronology and radioisotopic dating (e.g., ^14^C, U-Pb, ^40^Ar/^39^Ar) has the potential to improve the accuracy and precision of both methods [@kuiper2008; @meyers2012]. In this document I am attempting to link both chronometers using a Bayesian age-depth modeling framework. Age depth modeling aims to develop a model that relates stratigraphic position to age in a way that allows statistically robust predictions of age at un-dated positions [@haslett2008; @blaauw2011; @blaauw2012]. At present these models rely entirely on discrete, dated horizons, to be points anchored in absolute time. Alternatively, ashrochronology can generate "floating" time scales that are highly precise but lack anchor points. Linking the two chronometers has the potential to create an age-depth model that has the best of both, highly precise anchor points, and reduced uncertainties in stratigraphic positions that lack radioisotopic dates.
-
-So far I am incorporating astrochronology into probability calculations using the methods of @malinverno2010. The authors define the likelihood of a temporal frequency $f$ in a red noise backgrounds as:
-
-$$
-p(d|m,f) = constant \times exp \left(\frac{C_d(f)}{C_b(f)}\right)
-$$
-
-where $d$ is a cyclostratigraphic record, $m$ is a sedimentation rate model, and $f$ is a vector of tuning frequencies. $C_d(f)$ is the periodogram of the data and $C_b(f)$ is the periodogram of the red noise background.
-
-# Using `astroBayes`
-## Data file formatting
-
-This package relies on 4 core data files that **must** folow a specific format:
-* Geochronologic data (e.g., ^14^C, U-Pb, ^40^Ar/^39^Ar) where the columns names 
-
 
 ```{r}
-
-
-
+# load the example data sets --------------------------------------------------
+geochron_data    <- read.csv(file = '../data/data_A/radioisotopic_dates.csv')
+cyclostrat_data  <- read.csv(file = '../data/data_A/cyclostratigraphic_record.csv')
+tuning_frequency <- read.csv(file = '../data/data_A/tuning_frequency.csv')
+true_data        <- read.csv(file = '../data/data_A/true_age.csv')
+segment_edges    <- read.csv(file = '../data/data_A/segment_edges.csv')
+new_positions    <- read.csv(file = '../data/data_A/new_positions.csv')
 ```
 
+```{r}
+# run the age model -----------------------------------------------------------
+model_output <- astro_bayes_model(geochron_data = geochron_data,
+                                  cyclostrat_data = cyclostrat_data,
+                                  tuning_frequency = tuning_frequency,
+                                  segment_edges = segment_edges,
+                                  sed_prior_range = c(0, 20),
+                                  iterations = 10000,
+                                  burn = 1000)
+
+# plot the results ------------------------------------------------------------
+plot(model_output, type = 'age_depth')
+plot(model_output, type = 'sed_rate')
+plot(model_output, type = 'trace')
+plot(model_output, type = 'periodogram')
+
+# predict age for new positions -----------------------------------------------
+new_positions <- predict(model_output,
+                         new_positions)
+
+plot(new_positions)
+```
 
 # References
 :::{#refs}

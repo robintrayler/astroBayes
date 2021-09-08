@@ -31,7 +31,7 @@ predict.astroBayesModel <- function(age_model, new_positions) {
   for(i in seq_along(1:age_model$iterations)) {
     pb$tick()
     # form interpolation function ---------------------------------------------
-    f <- approxfun(x = age_model$CI$grid,
+    f <- approxfun(x = age_model$CI$position,
                    y = age_model$model_iterations[, i])
 
     # randomize the positions

@@ -37,6 +37,8 @@ column headers \emph{must} be named exactly as follows:
 column headers \emph{must} be named exactly as follows:
 \itemize{
 \item frequency: the tuning frequency or frequencies to use
+\item orbital_cycle: character string name of each orbital cycle.
+Multiple rows with the same name are allowed.
 }}
 
 \item{segment_edges}{stratigraphic points where sedimentation rate changes can  occur. Must be in the same stratigraphic scheme as geochron_data and cyclostrat_data.}
@@ -50,7 +52,28 @@ prior distribution for sedimentation rate.}
 \item{burn}{how many initial iterations to toss when calculating credible intervals}
 }
 \value{
-a list with a whole bunch of stuff in it.
+The function returns a list of class \code{astroBayesModel}
+which contains the following objects:
+\code{CI} data frame containing the credible interval for the age model
+\code{anchor_point} a data.frame containing the posterior sample for the anchor_point
+parameter(s)
+\itemize{
+\item \code{sed_rate} a matrix containing the posterior sample of sedimentation rate
+for each model segment
+\item \code{model_iterations} a matrix containing the individual model iterations used
+to calculate \code{CI}. These can be plotted agains the \code{position} column in \code{CI}
+to visualize.
+}
+
+The output object also includes all the model inputs: shown below. These are
+caried through for easy of data visualization.
+\itemize{
+\item \code{segment_edges}
+\item \code{geochron_data}
+\item \code{cyclostrat_data}
+\item \code{sed_prior_range}
+\item \code{tuning_frequency}
+}
 }
 \description{
 Run a modified version of the algorithm from Malinverno et al., 2010 with an additional

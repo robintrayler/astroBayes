@@ -54,11 +54,11 @@ age_depth_plot <- function(age_model) {
     geom_ribbon(data = age_model$CI,
                 mapping = aes(ymin = CI_2.5,
                               ymax = CI_97.5,
-                              x = grid),
+                              x = position),
                 inherit.aes = FALSE,
                 alpha = 0.25) +
     geom_line(data = age_model$CI,
-              mapping = aes(x = grid,
+              mapping = aes(x = position,
                             y = median),
               inherit.aes = FALSE) +
     theme_bw() +

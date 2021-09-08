@@ -18,8 +18,10 @@
 #'
 #' @param tuning_frequency data frame of tuning frequencies to use. Currently frequencies must be in cycles / Ma (i.e., long eccentricity ~ 1 / 0.405).
 #' column headers *must* be named exactly as follows:
+#'
 #' * frequency: the tuning frequency or frequencies to use
-#  * orbital_cycle: character string name of each orbital cycle. Multiple rows with the same name are allowed.
+#'  * orbital_cycle: character string name of each orbital cycle.
+#'   Multiple rows with the same name are allowed.
 #'
 #' @param segment_edges stratigraphic points where sedimentation rate changes can  occur. Must be in the same stratigraphic scheme as geochron_data and cyclostrat_data.
 #'
@@ -37,7 +39,25 @@
 #' @import "tibble"
 #' @importFrom magrittr "%>%"
 #'
-#' @return a list with a whole bunch of stuff in it.
+#' @return The function returns a list of class `astroBayesModel`
+#' which contains the following objects:
+#'  `CI` data frame containing the credible interval for the age model
+#'  `anchor_point` a data.frame containing the posterior sample for the anchor_point
+#'    parameter(s)
+#'  * `sed_rate` a matrix containing the posterior sample of sedimentation rate
+#'  for each model segment
+#'  * `model_iterations` a matrix containing the individual model iterations used
+#'  to calculate `CI`. These can be plotted agains the `position` column in `CI`
+#'  to visualize.
+#'
+#'  The output object also includes all the model inputs: shown below. These are
+#'  caried through for easy of data visualization.
+#'  * `segment_edges`
+#'  * `geochron_data`
+#'  * `cyclostrat_data`
+#'  * `sed_prior_range`
+#'  * `tuning_frequency`
+#'
 #' @md
 #' @export
 
@@ -212,7 +232,7 @@ astro_bayes_model <- function(geochron_data,
     data.frame()
 
   names(CI) <- c('CI_2.5', 'median', 'CI_97.5')
-  CI <- CI %>% add_column(grid = position_grid)
+  CI <- CI %>% add_column(position = position_grid)
 
   output = list(CI = CI,
                 anchor_point = anchor_point,

@@ -248,4 +248,3 @@ astro_bayes_model <- function(geochron_data,
   class(output) <- "astroBayesModel"
   return(output)
 }
-

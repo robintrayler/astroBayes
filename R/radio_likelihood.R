@@ -16,5 +16,3 @@ radio_likelihood <- function(segment_edges,
 
   return(LL)
 }
-
-

@@ -124,6 +124,13 @@ astro_bayes_model <- function(geochron_data,
   model_storage[, 1] <- f(position_grid)
   rm(f)
 
+  probability_storage <- data.frame(
+    radio_proposed = vector(length = iterations),
+    radio_current  = vector(length = iterations),
+    radio_accepted = vector(length = iterations)
+
+  )
+
   # run the MCMC model ----------------------------------------------------------
   pb <- progress::progress_bar$new(total = iterations,
                                    format = '[:bar] :percent eta: :eta')
@@ -207,6 +214,9 @@ astro_bayes_model <- function(geochron_data,
                                       geochron_data$age_sd,
                                       position = geochron_data$position)
 
+
+    probability_storage$radio_proposed[j] <- radio_proposed
+    probability_storage$radio_current[j] <- radio_current
     a <- radio_proposed - radio_current
 
     if(!is.na(a)) {
@@ -216,6 +226,7 @@ astro_bayes_model <- function(geochron_data,
           f <- approxfun(x = segment_edges$position,
                          y = model_proposed)
           model_storage[, j] <- f(position_grid)
+          probability_storage$radio_accepted[j] <- a
         }
       }
     }
@@ -244,7 +255,8 @@ astro_bayes_model <- function(geochron_data,
                 geochron_data = master_geochron,
                 cyclostrat_data = cyclostrat_data,
                 sed_prior_range = sed_prior_range,
-                tuning_frequency = tuning_frequency)
+                tuning_frequency = tuning_frequency,
+                probability_storage = probability_storage)
   class(output) <- "astroBayesModel"
   return(output)
 }

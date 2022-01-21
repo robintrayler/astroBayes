@@ -51,7 +51,8 @@ predict.astroBayesModel <- function(age_model, new_positions) {
   credible_interval <- apply(X = posterior_sample[age_model$burn:age_model$iterations, ],
                              MARGIN = 2,
                              FUN = quantile,
-                             prob = c(0.025, 0.5, 0.975)) %>%
+                             prob = c(0.025, 0.5, 0.975),
+                             na.rm = TRUE) %>%
     t() %>%
     as.data.frame() %>%
     rlang::set_names(nm = c('CI_2.5', 'median', 'CI_97.5')) %>%

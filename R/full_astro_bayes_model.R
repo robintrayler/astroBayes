@@ -110,17 +110,17 @@ full_astro_bayes_model <- function(geochron_data,
                                    format = '[:bar] :percent eta: :eta')
 
   for(j in 2:iterations) {
-    print(j)
+    # print(j)
     # update progress bar
-    # pb$tick()
+    pb$tick()
     # store the previous iterations in case things get rejected ---------------
     sed_rate[j, ] <- sed_rate[j - 1, ]
     model_storage[, j] <- model_storage[, j - 1]
     anchor_point[j] <- anchor_point[j - 1]
     # update segment edges ----------------------------------------------------
     segment_edges$position <- runif(nrow(master_edges),
-                                    min = master_edges$position - master_edges$thickness,
-                                    max = master_edges$position + master_edges$thickness)
+                                    min = master_edges$position - master_edges$thickness / 2,
+                                    max = master_edges$position + master_edges$thickness / 2)
     # update geochron positions -----------------------------------------------
     geochron_data$position = runif(nrow(master_geochron),
                                    min = master_geochron$position - master_geochron$thickness / 2,
@@ -215,7 +215,7 @@ full_astro_bayes_model <- function(geochron_data,
     data.frame()
 
   names(CI) <- c('CI_2.5', 'median', 'CI_97.5')
-  CI <- CI %>% add_column(grid = position_grid)
+  CI <- CI %>% add_column(position = position_grid)
 
   output = list(CI = CI,
                 anchor_point = anchor_point,

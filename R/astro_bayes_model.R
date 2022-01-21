@@ -65,10 +65,11 @@ astro_bayes_model <- function(geochron_data,
                               cyclostrat_data,
                               tuning_frequency,
                               segment_edges,
-                              sed_prior_range,
-                              iterations = 100000,
-                              burn = 5000) {
+                              sed_prior_range = c(0, 1e8),
+                              iterations = 10000,
+                              burn = 1000) {
   # Need a whole bunch of error checking here ---------------------------------
+  sed_prior_range <- sort(sed_prior_range) # keep things in order
 
   # check to make sure things are in order
   geochron_data   <- geochron_data %>% arrange(position)
@@ -127,9 +128,7 @@ astro_bayes_model <- function(geochron_data,
   probability_storage <- data.frame(
     radio_proposed = vector(length = iterations),
     radio_current  = vector(length = iterations),
-    radio_accepted = vector(length = iterations)
-
-  )
+    radio_accepted = vector(length = iterations))
 
   # run the MCMC model ----------------------------------------------------------
   pb <- progress::progress_bar$new(total = iterations,
@@ -153,11 +152,12 @@ astro_bayes_model <- function(geochron_data,
     # update sed rates --------------------------------------------------------
     for(q in 1:ncol(sed_rate)) {
       # propose a new rate ------------------------------------------
-      proposed_rate <- adaptive_update(chain = sed_rate[, q],
-                                       i = j,
-                                       start_index = burn/2,
-                                       initial_Cd = 0.001,
-                                       distribution = 'gamma')
+      proposed_rate <- adaptive_update_truncated(chain = sed_rate[, q],
+                                                 i = j,
+                                                 start_index = burn / 2,
+                                                 initial_Cd = 0.001,
+                                                 lower = sed_prior_range[1],
+                                                 upper = sed_prior_range[2])
 
       # calculate the probability -----------------------------------
       proposed_prob <- pgram_likelihood(sed_rate = proposed_rate,
@@ -165,18 +165,13 @@ astro_bayes_model <- function(geochron_data,
                                         cyclostrat = cyclostrat_data,
                                         tuning_frequency = tuning_frequency$frequency)
 
-      prior_proposed <- sed_prior(proposed_rate,
-                                  min(sed_prior_range),
-                                  max(sed_prior_range))
       current_prob  <- pgram_likelihood(sed_rate = sed_rate[j - 1, q],
                                         segment_edges = segment_edges$position[q:(q + 1)],
                                         cyclostrat = cyclostrat_data,
                                         tuning_frequency = tuning_frequency$frequency)
-      prior_current <- sed_prior(sed_rate[j - 1, q],
-                                 min(sed_prior_range),
-                                 max(sed_prior_range))
 
-      a <- (proposed_prob + prior_proposed) - (current_prob + prior_current)
+
+      a <- (proposed_prob) - (current_prob)
 
       if(!is.na(a)) {
         if(!is.infinite(a)) {

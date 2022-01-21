@@ -47,11 +47,11 @@
 #'  * `sed_rate` a matrix containing the posterior sample of sedimentation rate
 #'  for each model segment
 #'  * `model_iterations` a matrix containing the individual model iterations used
-#'  to calculate `CI`. These can be plotted agains the `position` column in `CI`
+#'  to calculate `CI`. These can be plotted against the `position` column in `CI`
 #'  to visualize.
 #'
 #'  The output object also includes all the model inputs: shown below. These are
-#'  caried through for easy of data visualization.
+#'  carried through for ease of data visualization.
 #'  * `segment_edges`
 #'  * `geochron_data`
 #'  * `cyclostrat_data`
@@ -155,40 +155,52 @@ astro_bayes_hiatus_model <- function(geochron_data,
 
     # update segment edges ----------------------------------------------------
     segment_edges$position <- runif(nrow(master_edges),
-                                    min = master_edges$position - master_edges$thickness,
-                                    max = master_edges$position + master_edges$thickness)
+                                    min = master_edges$position -
+                                      master_edges$thickness / 2,
+                                    max = master_edges$position +
+                                      master_edges$thickness / 2)
     # update geochron positions -----------------------------------------------
     geochron_data$position = runif(nrow(master_geochron),
-                                   min = master_geochron$position - master_geochron$thickness / 2,
-                                   max = master_geochron$position + master_geochron$thickness / 2)
+                                   min = master_geochron$position -
+                                     master_geochron$thickness / 2,
+                                   max = master_geochron$position +
+                                     master_geochron$thickness / 2)
     # update sed rates --------------------------------------------------------
     for(q in 1:ncol(sed_rate)) {
       # propose a new rate ------------------------------------------
-      proposed_rate <- adaptive_update(chain = sed_rate[, q],
-                                       i = j,
-                                       start_index = burn/2,
-                                       initial_Cd = 0.001,
-                                       distribution = 'gamma')
+      # proposed_rate <- adaptive_update(chain = sed_rate[, q],
+      #                                  i = j,
+      #                                  start_index = burn / 2,
+      #                                  initial_Cd = 0.001,
+      #                                  distribution = 'gamma')
 
+
+      proposed_rate <- adaptive_update_truncated(chain = sed_rate[, q],
+                                                 i = j,
+                                                 start_index = burn / 2,
+                                                 initial_Cd = 0.001,
+                                                 lower = sed_prior_range[1],
+                                                 upper = sed_prior_range[2])
       # calculate the probability -----------------------------------
       proposed_prob <- pgram_likelihood(sed_rate = proposed_rate,
                                         segment_edges = segment_edges$position[q:(q + 1)],
                                         cyclostrat = cyclostrat_data,
                                         tuning_frequency = tuning_frequency$frequency)
 
-      prior_proposed <- sed_prior(proposed_rate,
-                                  min(sed_prior_range),
-                                  max(sed_prior_range))
+      # prior_proposed <- sed_prior(proposed_rate,
+      #                             min(sed_prior_range),
+      #                             max(sed_prior_range))
       current_prob  <- pgram_likelihood(sed_rate = sed_rate[j - 1, q],
                                         segment_edges = segment_edges$position[q:(q + 1)],
                                         cyclostrat = cyclostrat_data,
                                         tuning_frequency = tuning_frequency$frequency)
-      prior_current <- sed_prior(sed_rate[j - 1, q],
-                                 min(sed_prior_range),
-                                 max(sed_prior_range))
+      # prior_current <- sed_prior(sed_rate[j - 1, q],
+      #                            min(sed_prior_range),
+      #                            max(sed_prior_range))
 
-      a <- (proposed_prob + prior_proposed) - (current_prob + prior_current)
+      # a <- (proposed_prob + prior_proposed) - (current_prob + prior_current)
 
+      a <- (proposed_prob) - (current_prob)
       if(!is.na(a)) {
         if(!is.infinite(a)) {
           if(exp(a) > runif(1)) {
@@ -201,11 +213,12 @@ astro_bayes_hiatus_model <- function(geochron_data,
     #########################################################################
     # Update anchor point
     # anchor the model in time ----------------------------------------------
-    new_anchor <- adaptive_update(chain = anchor_point,
-                                  i = j,
-                                  start_index = burn/2,
-                                  initial_Cd = 0.001,
-                                  distribution = 'gaussian')
+    new_anchor <- adaptive_update_truncated(chain = anchor_point,
+                                            i = j,
+                                            start_index = burn / 2,
+                                            initial_Cd = 0.001,
+                                            lower = -1e-10,
+                                            upper = 1e10)
 
 
     model_proposed <- anchor_hiatus_sed_model(segment_edges = segment_edges,
@@ -333,7 +346,8 @@ astro_bayes_hiatus_model <- function(geochron_data,
                 geochron_data = master_geochron,
                 cyclostrat_data = cyclostrat_data,
                 sed_prior_range = sed_prior_range,
-                tuning_frequency = tuning_frequency)
+                tuning_frequency = tuning_frequency,
+                hiatus_durations = hiatus_storage)
   class(output) <- "astroBayesModel"
   return(output)
 }

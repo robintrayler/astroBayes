@@ -5,7 +5,7 @@ output: rmarkdown::html_vignette
 bibliography: /Users/robintrayler/Zotero/ref_library.bib
 csl: /Users/robintrayler/Zotero/styles/geology.csl
 vignette: >
-  %\VignetteIndexEntry{my-vignette}
+  %\VignetteIndexEntry{using_astroBayes}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -18,14 +18,29 @@ knitr::opts_chunk$set(
 ```
 
 # Introduction
+
 This package contains a *very* basic method to integrate radioisotopic geochronology and cyclostratigraphy in a Bayesian framework. These methods are currently under development and is not publication ready.
 
-The package can be loaded using the `library()` function. 
+The basic astroBayes model implements a version of a modeling technique first proposed by @malinverno2010. The authors developed a model of the probability of a temporal frequency $f$ in a red noise background given $d$ is a vector of evenly spaced cyclostratigraphic data, $m$ is a vector of sedimentation rates and segment boundaries, and $f$ is a vector of orbital frequencies to use for "tuning"
+
+$$
+P(d|m, f) = K \times \frac{C_{data}(f)}{C_{background}(f)}
+$$
+
+Where $C_{data}(f)$ is the periodogram of the data, $C_{background}(f)$ is the red noise background, and K is a normalization constant.
+
+# Setup
+
+The package can be loaded using the `library()` function.
 
 ```{r setup}
+# devtools::install_github('robintrayer/astroBayes')
 library(astroBayes)
 ```
 
+I've included two testing data sets in this package. the **A** data set is a simple simple and mostly linear, and it lacks sedimentary hiatuses. The **B** data set is more complex and include a single unconformity.
+
+# Data Exploration
 
 ```{r}
 # load the example data sets --------------------------------------------------
@@ -37,29 +52,7 @@ segment_edges    <- read.csv(file = '../data/data_A/segment_edges.csv')
 new_positions    <- read.csv(file = '../data/data_A/new_positions.csv')
 ```
 
-```{r}
-# run the age model -----------------------------------------------------------
-model_output <- astro_bayes_model(geochron_data = geochron_data,
-                                  cyclostrat_data = cyclostrat_data,
-                                  tuning_frequency = tuning_frequency,
-                                  segment_edges = segment_edges,
-                                  sed_prior_range = c(0, 20),
-                                  iterations = 10000,
-                                  burn = 1000)
-
-# plot the results ------------------------------------------------------------
-plot(model_output, type = 'age_depth')
-plot(model_output, type = 'sed_rate')
-plot(model_output, type = 'trace')
-plot(model_output, type = 'periodogram')
-
-# predict age for new positions -----------------------------------------------
-new_positions <- predict(model_output,
-                         new_positions)
-
-plot(new_positions)
-```
-
 # References
-:::{#refs}
+
+::: {#refs}
 :::

@@ -23,18 +23,26 @@ plot.astroBayesModel <- function(age_model,
                                  type = c('age_depth',
                                           'sed_rate',
                                           'trace',
-                                          'periodogram')){
+                                          'periodogram',
+                                          'cyclostrat')) {
 
-  if(type == 'age_depth'){
-    age_depth_plot(age_model)
-  } else if(type == 'sed_rate') {
-    plot_sed_rate(age_model)
-  } else if(type == 'trace') {
-    plot_trace(age_model)
-  } else if(type == 'periodogram') {
-    plot_pgram(age_model)
-  }
+  switch(type,
+         'age_depth' = age_depth_plot(age_model),
+         'sed_rate' = plot_sed_rate(age_model),
+         'trace' = plot_trace(age_model),
+         'periodogram' = plot_pgram(age_model),
+         'cyclostrat' = cyclostrat_plot(age_model))
 }
+#   if(type == 'age_depth'){
+#     age_depth_plot(age_model)
+#   } else if(type == 'sed_rate') {
+#     plot_sed_rate(age_model)
+#   } else if(type == 'trace') {
+#     plot_trace(age_model)
+#   } else if(type == 'periodogram') {
+#     plot_pgram(age_model)
+#   }
+# }
 
 ###############################################################################
 age_depth_plot <- function(age_model) {
@@ -146,7 +154,7 @@ plot_pgram <- function(age_model) {
                   verbose = FALSE,
                   genplot = FALSE,
                   background = 1) %>%
-      mutate(probability = Power / AR1_Fit,
+      mutate(probability = (Power / AR1_Fit),
              probability = probability / sum(probability),
              time_freq   = Frequency * quantile(age_model$sed_rate[age_model$burn:age_model$iterations, k],
                                                 prob = 0.5,
@@ -176,4 +184,17 @@ plot_pgram <- function(age_model) {
       scale_color_viridis(discrete = TRUE, option = 'D', end = 0.9)
   }
   cowplot::plot_grid(plotlist = cowplot::align_plots(plotlist = plots))
+}
+
+###############################################################################
+cyclostrat_plot <- function(age_model) {
+  p <- age_model$cyclostrat_CI %>%
+    ggplot(mapping = aes(x = median,
+                         y = value)) +
+    geom_path() +
+    geom_point(size = 0.25) +
+    theme_bw() +
+    xlab('age (Ma)') +
+    ylab('Value')
+  return(p)
 }

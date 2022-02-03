@@ -19,8 +19,8 @@ pgram_likelihood <- function(sed_rate,
                   verbose = FALSE,
                   genplot = FALSE,
                   background = 1) |>
-      mutate(probability = Power / AR1_Fit,
-             probability = probability / sum(probability),
+      mutate(probability = (Power / AR1_Fit),
+             probability = (probability / sum(probability)),
              time_freq   = Frequency * sed_rate[i]) |>
       with(approxfun(x = time_freq,
                      y = probability))

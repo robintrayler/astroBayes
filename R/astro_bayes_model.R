@@ -47,11 +47,11 @@
 #'  * `sed_rate` a matrix containing the posterior sample of sedimentation rate
 #'  for each model segment
 #'  * `model_iterations` a matrix containing the individual model iterations used
-#'  to calculate `CI`. These can be plotted agains the `position` column in `CI`
+#'  to calculate `CI`. These can be plotted against the `position` column in `CI`
 #'  to visualize.
 #'
 #'  The output object also includes all the model inputs: shown below. These are
-#'  caried through for easy of data visualization.
+#'  carried through for ease of data visualization.
 #'  * `segment_edges`
 #'  * `geochron_data`
 #'  * `cyclostrat_data`
@@ -65,16 +65,59 @@ astro_bayes_model <- function(geochron_data,
                               cyclostrat_data,
                               tuning_frequency,
                               segment_edges,
-                              sed_prior_range = c(0, 1e8),
+                              sed_prior_range = c(0, 1000),
                               iterations = 10000,
-                              burn = 1000) {
-  # Need a whole bunch of error checking here ---------------------------------
-  sed_prior_range <- sort(sed_prior_range) # keep things in order
+                              burn = 5000) {
+  # error checking ------------------------------------------------------------
+  # geochron data
+  if(!all(c('id', 'age', 'age_sd', 'position', 'thickness') %in%
+          names(geochron_data))
+  ) {stop('geochron_data columns are named incorrectly. \n
+          Column names must be exactly: "id", "age", "age_sd", "position", "thickness"')}
 
-  # check to make sure things are in order
+  # segment edges
+  if(!all(c('position', 'thickness', 'hiatus_boundary') %in% names(segment_edges)))
+  {stop('segment_edges columns are named incorrectly. \n
+          Column names must be exactly: "position", "thickness", "hiatus_boundary"')}
+
+  # cyclostrat data
+  if(!all(names(cyclostrat_data) %in% c('position', 'value'))
+  ) {stop('cyclostrat_data columns are named incorrectly. \n
+          Column names must be exactly: "position", "value"')}
+
+  # tuning frequency
+  if(!all(c('frequency', 'orbital_cycle') %in% names(tuning_frequency))
+  ) {stop('tuning_frequency columns are named incorrectly. \n
+          Column names must be exactly: "frequency", "orbital_cycle"')}
+
+  # check for missing values --------------------------------------------------
+  # geochron_data
+  if(!(nrow(geochron_data) > 0)) {
+    stop('geochron_data has 0 rows. It must contain at least two rows')
+  }
+
+  # segment edges
+  if(!(nrow(segment_edges) > 1)) {
+    stop('segment_edges has less than 2 rows. It must contain at least two rows')
+  }
+
+  # cyclostrat data
+  if(!(nrow(cyclostrat_data) > 0)) {
+    stop('cyclostrat_data has 0 rows.')
+  }
+
+  # tuning frequency
+  if(!(nrow(tuning_frequency) > 0)) {
+    stop('tuning_frequency has 0 rows. It must contain at least 1 row')
+  }
+
+  # check to make sure things are in order ------------------------------------
   geochron_data   <- geochron_data %>% arrange(position)
   cyclostrat_data <- cyclostrat_data %>% arrange(position)
 
+  # store the input data for when positions move around later
+  master_edges <- segment_edges
+  master_geochron <- geochron_data
   # define interpolation grid -------------------------------------------------
   position_grid <- seq(from = min(segment_edges$position),
                        to   = max(segment_edges$position),
@@ -82,18 +125,28 @@ astro_bayes_model <- function(geochron_data,
 
   # set up model storage ------------------------------------------------------
   # store the sedimentation rate for each segment
-  sed_rate <- sed_rate <- matrix(nrow = iterations,
-                                 ncol = nrow(segment_edges) - 1)
-
-  master_edges <- segment_edges
-  master_geochron <- geochron_data
+  sed_rate <- matrix(nrow = iterations,
+                     ncol = nrow(segment_edges) - 1)
 
   # store all probabilities and anchor point
   anchor_point <- vector(length = iterations)
 
+  # hiatus duration
+  n_hiatus <- sum(segment_edges$hiatus_boundary)
+  if(n_hiatus > 0) {
+    hiatus_storage <- matrix(0,
+                             nrow = iterations,
+                             ncol = n_hiatus)
+  } else {
+    hiatus_storage <- NA
+  }
+
   # storage for the age model
   model_storage <- matrix(nrow = length(position_grid),
                           ncol = iterations)
+
+  tuned_cyclostrat <- matrix(nrow = nrow(cyclostrat_data),
+                             ncol = iterations)
 
   # set initial conditions ----------------------------------------------------
   # set anchor point using a simple linear regression
@@ -112,123 +165,208 @@ astro_bayes_model <- function(geochron_data,
   sed_rate[1, ] <- rnorm(nrow(segment_edges) - 1,
                          mean = mean_rate,
                          sd = 0.001)
-  rm(mean_rate)
 
-  # anchor the initial model in time
-  anchored_model <- anchor_sed_model(segment_edges$position,
-                                     sed_rate[1, ],
-                                     anchor_point[1])
+  # anchor the initial model in time ------------------------------------------
+  model_storage[, 1] <- anchor_sed_model(segment_edges = segment_edges,
+                                         sed_rate[1, ],
+                                         anchor_point = anchor_point[1],
+                                         position_grid = position_grid,
+                                         hiatus_duration =
+                                           ifelse(
+                                             test = n_hiatus > 0,
+                                             yes = hiatus_storage[1, ],
+                                             no = NA)
+  )
 
-  # interpolate and store the model -------------------------------------------
-  f <- approxfun(x = segment_edges$position,
-                 y = anchored_model)
-  model_storage[, 1] <- f(position_grid)
-  rm(f)
-
-  probability_storage <- data.frame(
-    radio_proposed = vector(length = iterations),
-    radio_current  = vector(length = iterations),
-    radio_accepted = vector(length = iterations))
-
-  # run the MCMC model ----------------------------------------------------------
+  # run the MCMC model --------------------------------------------------------
   pb <- progress::progress_bar$new(total = iterations,
                                    format = '[:bar] :percent eta: :eta')
 
   for(j in 2:iterations) {
     # update progress bar
     pb$tick()
+
     # store the previous iterations in case things get rejected ---------------
     sed_rate[j, ] <- sed_rate[j - 1, ]
     model_storage[, j] <- model_storage[, j - 1]
     anchor_point[j] <- anchor_point[j - 1]
-    # update segment edges ----------------------------------------------------
-    segment_edges$position <- runif(nrow(master_edges),
-                                    min = master_edges$position - master_edges$thickness,
-                                    max = master_edges$position + master_edges$thickness)
-    # update geochron positions -----------------------------------------------
-    geochron_data$position = runif(nrow(master_geochron),
-                                   min = master_geochron$position - master_geochron$thickness / 2,
-                                   max = master_geochron$position + master_geochron$thickness / 2)
-    # update sed rates --------------------------------------------------------
-    for(q in 1:ncol(sed_rate)) {
-      # propose a new rate ------------------------------------------
-      proposed_rate <- adaptive_update_truncated(chain = sed_rate[, q],
-                                                 i = j,
-                                                 start_index = burn / 2,
-                                                 initial_Cd = 0.001,
-                                                 lower = sed_prior_range[1],
-                                                 upper = sed_prior_range[2])
 
-      # calculate the probability -----------------------------------
+    # if there are hiatuses
+    if(n_hiatus > 0) {
+      hiatus_storage[j, ] <- hiatus_storage[j - 1, ]
+    }
+
+    # randomly adjust segment edges -------------------------------------------
+    segment_edges$position <- runif(nrow(master_edges),
+                                    min = master_edges$position -
+                                      master_edges$thickness / 2,
+                                    max = master_edges$position +
+                                      master_edges$thickness / 2)
+
+    # randomly geochronology positions ----------------------------------------
+    geochron_data$position = runif(nrow(master_geochron),
+                                   min = master_geochron$position -
+                                     master_geochron$thickness / 2,
+                                   max = master_geochron$position +
+                                     master_geochron$thickness / 2)
+
+    # update sedimentation rates ----------------------------------------------
+    for(q in 1:ncol(sed_rate)) {
+
+      # propose a new rate ----------------------------------------------------
+      proposed_rate <- adaptive_update(chain = sed_rate[, q],
+                                       i = j,
+                                       start_index = burn / 2,
+                                       initial_Cd = 0.001,
+                                       lower = sed_prior_range[1],
+                                       upper = sed_prior_range[2])
+
+      # calculate the probability ---------------------------------------------
       proposed_prob <- pgram_likelihood(sed_rate = proposed_rate,
-                                        segment_edges = segment_edges$position[q:(q + 1)],
+                                        segment_edges =
+                                          segment_edges$position[q:(q + 1)],
                                         cyclostrat = cyclostrat_data,
-                                        tuning_frequency = tuning_frequency$frequency)
+                                        tuning_frequency =
+                                          tuning_frequency$frequency)
 
       current_prob  <- pgram_likelihood(sed_rate = sed_rate[j - 1, q],
-                                        segment_edges = segment_edges$position[q:(q + 1)],
+                                        segment_edges =
+                                          segment_edges$position[q:(q + 1)],
                                         cyclostrat = cyclostrat_data,
-                                        tuning_frequency = tuning_frequency$frequency)
+                                        tuning_frequency =
+                                          tuning_frequency$frequency)
 
+      # use a Metropolis-Hastings algorithm to accept or reject
+      p <- (proposed_prob) - (current_prob)
 
-      a <- (proposed_prob) - (current_prob)
-
-      if(!is.na(a)) {
-        if(!is.infinite(a)) {
-          if(exp(a) > runif(1)) {
+      if(!is.na(p)) {
+        if(!is.infinite(p)) {
+          if(exp(p) > runif(1)) {
             sed_rate[j, q] <- proposed_rate
           }
         }
       }
     }
 
-    # anchor the model in time --------------------------------------------------
+    # Update the anchor point -------------------------------------------------
+    # propose a new age for the anchor point
     new_anchor <- adaptive_update(chain = anchor_point,
                                   i = j,
-                                  start_index = burn/2,
-                                  initial_Cd = 0.0001,
-                                  distribution = 'gaussian')
+                                  start_index = burn / 2,
+                                  initial_Cd = 0.001,
+                                  lower = -1e-10,
+                                  upper = 1e10)
 
-    model_proposed <- anchor_sed_model(segment_edges$position,
-                                       sed_rate[j, ],
-                                       new_anchor)
+    # anchor the proposed and current models in absolute time -----------------
+    model_proposed <- anchor_sed_model(segment_edges = segment_edges,
+                                       sed_rate = sed_rate[j, ],
+                                       anchor_point = new_anchor,
+                                       hiatus_duration = ifelse(
+                                         test = n_hiatus > 0,
+                                         yes = hiatus_storage[j - 1, ],
+                                         no = NA),
+                                       position_grid = position_grid)
 
-    model_current <- anchor_sed_model(segment_edges$position,
-                                      sed_rate[j, ],
-                                      anchor_point[j-1])
-    # calculate radiometric probability
-    radio_proposed <- radio_likelihood(segment_edges = segment_edges$position,
-                                       anchored_model = model_proposed,
+    model_current <- anchor_sed_model(segment_edges = segment_edges,
+                                      sed_rate = sed_rate[j, ],
+                                      anchor_point = anchor_point[j - 1],
+                                      hiatus_duration = ifelse(
+                                        test = n_hiatus > 0,
+                                        yes = hiatus_storage[j - 1, ],
+                                        no = NA),
+                                      position_grid = position_grid)
+
+    # calculate radiometric probability ---------------------------------------
+    # only the anchor point changes at this point
+    # hiatus duration are updated later
+    radio_proposed <- radio_likelihood(anchored_model = model_proposed,
+                                       position_grid = position_grid,
                                        age = geochron_data$age,
                                        age_sd = geochron_data$age_sd,
                                        position = geochron_data$position)
 
-    radio_current <- radio_likelihood(segment_edges$position,
-                                      model_current,
-                                      geochron_data$age,
-                                      geochron_data$age_sd,
+    radio_current <- radio_likelihood(anchored_model = model_current,
+                                      position_grid = position_grid,
+                                      age = geochron_data$age,
+                                      age_sd = geochron_data$age_sd,
                                       position = geochron_data$position)
 
+    # use a Metropolis-Hastings algorithm to accept or reject
+    p <- radio_proposed - radio_current
 
-    probability_storage$radio_proposed[j] <- radio_proposed
-    probability_storage$radio_current[j] <- radio_current
-    a <- radio_proposed - radio_current
-
-    if(!is.na(a)) {
-      if(!is.infinite(a)) {
-        if(exp(a) > runif(1)) {
+    if(!is.na(p)) {
+      if(!is.infinite(p)) {
+        if(exp(p) > runif(1)) {
           anchor_point[j] <- new_anchor
-          f <- approxfun(x = segment_edges$position,
-                         y = model_proposed)
-          model_storage[, j] <- f(position_grid)
-          probability_storage$radio_accepted[j] <- a
+          model_storage[, j] <- model_proposed
         }
       }
     }
-  }
+    # update hiatus duration --------------------------------------------------
+    if(n_hiatus > 0) {
+      duration <- vector() # temporary vector of duration
+
+      for(k in 1:n_hiatus) {
+        duration[k] <- adaptive_update(chain = hiatus_storage[, k],
+                                       i = j,
+                                       start_index = burn/2,
+                                       initial_Cd = 0.00001,
+                                       lower = -1e-10,
+                                       upper = 1e10)
+      }
+
+      # anchor the model in absolute time ---------------------------------------
+      model_proposed <- anchor_sed_model(segment_edges = segment_edges,
+                                         sed_rate = sed_rate[j, ],
+                                         anchor_point = anchor_point[j],
+                                         hiatus_duration = duration,
+                                         position_grid = position_grid)
+
+      model_current <- anchor_sed_model(segment_edges = segment_edges,
+                                        sed_rate = sed_rate[j, ],
+                                        anchor_point = anchor_point[j],
+                                        hiatus_duration =
+                                          hiatus_storage[j - 1, ],
+                                        position_grid = position_grid)
+
+      # calculate radiometric probability ---------------------------------------
+      # only the duration(s) change at this point
+      # anchor point is constant
+      duration_proposed <- radio_likelihood(anchored_model = model_proposed,
+                                            position_grid = position_grid,
+                                            age = geochron_data$age,
+                                            age_sd = geochron_data$age_sd,
+                                            position = geochron_data$position)
+
+      duration_current <- radio_likelihood(anchored_model = model_current,
+                                           position_grid = position_grid,
+                                           age = geochron_data$age,
+                                           age_sd = geochron_data$age_sd,
+                                           position = geochron_data$position)
+
+      # use a Metropolis-Hastings algorithm to accept or reject
+      p <- duration_proposed - duration_current
+
+      if(!is.na(p)) {
+        if(!is.infinite(p)) {
+          if(exp(p) > runif(1)) {
+            hiatus_storage[j, ] <- duration
+            model_storage[, j]  <- model_proposed
+
+          }
+        }
+      }
+    }
+
+    # predict age of cyclostrat each iteration --------------------------------
+    f <- approxfun(x = position_grid,
+                   y = model_storage[, j])
+
+    tuned_cyclostrat[, j] <- f(cyclostrat_data$position)
+  } # end of the main loop ####################################################
 
   # clean up the results and organize for output ------------------------------
-  # calculate credible interval minus burn in
+  # calculate credible interval minus burn-in
   CI <- apply(X = model_storage[, burn:iterations],
               MARGIN = 1,
               FUN = quantile,
@@ -237,21 +375,40 @@ astro_bayes_model <- function(geochron_data,
     t() %>%
     data.frame()
 
+  # make it ggplot friendly
   names(CI) <- c('CI_2.5', 'median', 'CI_97.5')
   CI <- CI %>% add_column(position = position_grid)
 
-  output = list(CI = CI,
-                anchor_point = anchor_point,
-                iterations = iterations,
-                burn = burn,
-                model_iterations = model_storage,
-                sed_rate = sed_rate,
-                segment_edges = master_edges,
-                geochron_data = master_geochron,
-                cyclostrat_data = cyclostrat_data,
-                sed_prior_range = sed_prior_range,
-                tuning_frequency = tuning_frequency,
-                probability_storage = probability_storage)
+  # calculate the credible interval for the cyclostratigraphy
+  cyclostrat_CI <- apply(X = tuned_cyclostrat[, burn:iterations],
+                         MARGIN = 1,
+                         FUN = quantile,
+                         prob = c(0.025, 0.5, 0.975),
+                         na.rm = TRUE) %>%
+    t() %>%
+    data.frame()
+
+  # make it ggplot friendly
+  names(cyclostrat_CI) <- c('CI_2.5', 'median', 'CI_97.5')
+  cyclostrat_CI <- cyclostrat_CI %>%
+    add_column(value = cyclostrat_data$value)
+
+  # gather the inputs and outputs into a list
+  output = list(CI = CI, # credible interval
+                cyclostrat_CI = cyclostrat_CI, # credible interval for cyclostrat data
+                anchor_point = anchor_point, # anchor point age
+                iterations = iterations, # number of iterations
+                burn = burn, # burn-in
+                model_iterations = model_storage, # individual age models
+                sed_rate = sed_rate, # sedimentation rate chains
+                segment_edges = master_edges, # segment_edges input
+                geochron_data = master_geochron, # geochron input
+                cyclostrat_data = cyclostrat_data, # cyclostrat_data input
+                sed_prior_range = sed_prior_range, # sed prior input
+                tuning_frequency = tuning_frequency, # tuning frequencies input
+                hiatus_durations = hiatus_storage) # hiatus duration
+
+  # assign a class and return
   class(output) <- "astroBayesModel"
   return(output)
 }

@@ -33,16 +33,6 @@ plot.astroBayesModel <- function(age_model,
          'periodogram' = plot_pgram(age_model),
          'cyclostrat' = cyclostrat_plot(age_model))
 }
-#   if(type == 'age_depth'){
-#     age_depth_plot(age_model)
-#   } else if(type == 'sed_rate') {
-#     plot_sed_rate(age_model)
-#   } else if(type == 'trace') {
-#     plot_trace(age_model)
-#   } else if(type == 'periodogram') {
-#     plot_pgram(age_model)
-#   }
-# }
 
 ###############################################################################
 age_depth_plot <- function(age_model) {
@@ -71,6 +61,7 @@ age_depth_plot <- function(age_model) {
               inherit.aes = FALSE) +
     theme_bw() +
     theme(legend.position = 'top') +
+    # scale_color_brewer(palette  = "Accent")
     scale_color_viridis(discrete = TRUE, option = 'D', end = 0.9)
 }
 ###############################################################################
@@ -180,8 +171,7 @@ plot_pgram <- function(age_model) {
       theme(legend.position = 'none',
             axis.text.y = element_blank()) +
       xlab('frequency (m/Ma)') +
-      theme(legend.position = 'none') +
-      scale_color_viridis(discrete = TRUE, option = 'D', end = 0.9)
+      theme(legend.position = 'none')
   }
   cowplot::plot_grid(plotlist = cowplot::align_plots(plotlist = plots))
 }

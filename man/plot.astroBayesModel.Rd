@@ -4,7 +4,10 @@
 \alias{plot.astroBayesModel}
 \title{plots the age model}
 \usage{
-\method{plot}{astroBayesModel}(age_model, type = c("age_depth", "sed_rate", "trace", "periodogram"))
+\method{plot}{astroBayesModel}(
+  age_model,
+  type = c("age_depth", "sed_rate", "trace", "periodogram", "cyclostrat")
+)
 }
 \arguments{
 \item{age_model}{the output of \code{astro_bayes_model}}

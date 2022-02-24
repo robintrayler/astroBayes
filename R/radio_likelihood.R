@@ -1,18 +1,22 @@
-radio_likelihood <- function(segment_edges,
-                             anchored_model,
-                             age,
-                             age_sd,
-                             id,
-                             position) {
-  # form approximation function
-  f <- approxfun(x = segment_edges,
+radio_likelihood <- function(anchored_model,
+                                    position_grid,
+                                    age,
+                                    age_sd,
+                                    id,
+                                    position) {
+
+  # create an interpolation function ------------------------------------------
+  f <- approxfun(x = position_grid,
                  y = anchored_model)
-  # predict age at dated positions
+
+  # predict age at dated positions and calculate log-likelihood ---------------
   LL <- f(position) %>%
-    # calculate probability
-    dnorm(age, age_sd) %>%
-    log() %>%
+  dnorm(mean = age,
+        sd = age_sd,
+        log = TRUE) %>%
     sum()
-  # return
+
+  # return the log likelihood
   return(LL)
 }
+

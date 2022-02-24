@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 
 # Introduction
 
-This package contains a *very* basic method to integrate radioisotopic geochronology and cyclostratigraphy in a Bayesian framework. These methods are currently under development and is not publication ready.
+This package contains a very basic method to integrate radioisotopic geochronology and cyclostratigraphy in a Bayesian framework. These methods are currently under development and is not publication ready.
 
 The basic astroBayes model implements a version of a modeling technique first proposed by @malinverno2010. The authors developed a model of the probability of a temporal frequency $f$ in a red noise background given $d$ is a vector of evenly spaced cyclostratigraphic data, $m$ is a vector of sedimentation rates and segment boundaries, and $f$ is a vector of orbital frequencies to use for "tuning"
 
@@ -31,16 +31,22 @@ Where $C_{data}(f)$ is the periodogram of the data, $C_{background}(f)$ is the r
 
 # Setup
 
-The package can be loaded using the `library()` function.
+The package can be loaded using the `library()` function. If `astroBayes` is not installed it can be installed from my GitHub page.
 
-```{r setup}
+```{r setup, message=FALSE}
 # devtools::install_github('robintrayer/astroBayes')
 library(astroBayes)
+# other useful packages
+library(astrochron)
+library(tidyverse)
+library(viridis)
+# set ggplot2 theme
+theme_set(theme_minimal())
 ```
 
 I've included two testing data sets in this package. the **A** data set is a simple simple and mostly linear, and it lacks sedimentary hiatuses. The **B** data set is more complex and include a single unconformity.
 
-# Data Exploration
+# Data
 
 ```{r}
 # load the example data sets --------------------------------------------------
@@ -51,6 +57,44 @@ true_data        <- read.csv(file = '../data/data_A/true_age.csv')
 segment_edges    <- read.csv(file = '../data/data_A/segment_edges.csv')
 new_positions    <- read.csv(file = '../data/data_A/new_positions.csv')
 ```
+
+# Data Exploration
+
+```{r}
+eha_results <- astrochron::eha(cyclostrat_data, 
+                win = 2.5,
+                pad = 500, 
+                step = 0.05,
+                genplot = FALSE, 
+                output = 3,
+                verbose = FALSE)
+```
+
+```{r, include=FALSE}
+# parse the eha for plotting
+eha_results <- eha_results %>% 
+  pivot_longer(cols = 2:(ncol(eha_results)),
+               names_to = 'depth',
+               values_to = 'amplitude')
+
+eha_results$depth <- sub("X", "", eha_results$depth) %>% as.numeric()
+```
+
+```{r, echo=FALSE, fig.width = 6.5, fig.height = 6.5}
+eha_results %>% 
+  ggplot(mapping = aes(x = freq,
+                       y = depth, 
+                       fill = amplitude)) + 
+  geom_tile() + 
+  scale_fill_viridis(option = 'mako') + 
+  xlab('Frequency (cycles/m)') + 
+  ylab('Depth (m)') + 
+  scale_y_reverse() + 
+  ggtitle('Evolutive Harmonic Analysis of the example data') +
+  theme(legend.position = 'none')
+```
+
+# Identifying changes in Sedimentation rate
 
 # References
 

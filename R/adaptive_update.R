@@ -5,6 +5,8 @@
 #' @param i current chain iteration
 #' @param start_index when should the proposal start adapting?
 #' @param initial_Cd initial guess at the proposal variance
+#' @param lower lower truncation for the random normal distribtion. Defaults to `-1E-10`
+#' @param upper upper truncation for the random normal distribtion. Defaults to `1E-10`
 #'
 #' @import "tidyverse"
 #' @import "dplyr"
@@ -19,48 +21,30 @@ adaptive_update <- function(chain,
                             i,
                             start_index = 1000,
                             initial_Cd = 0.01,
-                            distribution = c('gamma', 'gaussian')){
+                            lower = -1e10,
+                            upper = 1e10) {
 
   # set some global parameters ------------------------------------------------
   esp <- 1e-5 # keep things from going to zero
   S_d = 2.4^2 # scaling factor
-  if(i > start_index) {
+  C_d <- var(chain[1:(i-1)]) * S_d + S_d * esp %*% diag(1)
+
+  if(i >= start_index) {
     # calculate the proposal variance -----------------------------------------
     # per Haario et al., (2001)
-    C_d <- var(chain[1:(i-1)]) * S_d + S_d * esp %*% diag(1)
 
-    x_proposed <- numeric()
-    # propose a new value -----------------------------------------------------
-    if(distribution == 'gamma') {
-      alpha <- chain[i - 1]^2 / C_d
-      beta  <- chain[i - 1] / C_d
-      x_proposed <- rgamma(n = 1,
-                           shape = alpha,
-                           rate = beta)
+    x_proposed <- truncated_random_normal(
+      mean = chain[i - 1],
+      sd = sqrt(C_d),
+      low = lower,
+      high = upper)
 
-    } else if (distribution == 'gaussian') {
-      mu    <- chain[i - 1]
-      sd    <- sqrt(C_d)
-      x_proposed <- rnorm(n = 1,
-                          mean = mu,
-                          sd = sd)
-
-    }
-  } else {
-
-    if(distribution == 'gamma') {
-      alpha <- chain[i - 1]^2 / initial_Cd
-      beta  <- chain[i - 1] / initial_Cd
-      x_proposed <- rgamma(n = 1,
-                           shape = alpha,
-                           rate = beta)
-    } else if (distribution == 'gaussian') {
-      mu    <- chain[i - 1]
-      sd    <- sqrt(initial_Cd)
-      x_proposed <- rnorm(n = 1,
-                          mean = mu,
-                          sd = sd)
-    }
+  } else if (i < start_index) {
+    x_proposed <- truncated_random_normal(
+      mean = chain[i - 1],
+      sd = sqrt(initial_Cd),
+      low = lower,
+      high = upper)
   }
   return(x_proposed)
 }

@@ -10,8 +10,8 @@ astro_bayes_model(
   cyclostrat_data,
   tuning_frequency,
   segment_edges,
-  sed_prior_range,
-  iterations = 1e+05,
+  sed_prior_range = c(0, 1000),
+  iterations = 10000,
   burn = 5000
 )
 }
@@ -61,12 +61,12 @@ parameter(s)
 \item \code{sed_rate} a matrix containing the posterior sample of sedimentation rate
 for each model segment
 \item \code{model_iterations} a matrix containing the individual model iterations used
-to calculate \code{CI}. These can be plotted agains the \code{position} column in \code{CI}
+to calculate \code{CI}. These can be plotted against the \code{position} column in \code{CI}
 to visualize.
 }
 
 The output object also includes all the model inputs: shown below. These are
-caried through for easy of data visualization.
+carried through for ease of data visualization.
 \itemize{
 \item \code{segment_edges}
 \item \code{geochron_data}

@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 
 This package contains a very basic method to integrate radioisotopic geochronology and cyclostratigraphy in a Bayesian framework. These methods are currently under development and is not publication ready.
 
-The basic astroBayes model implements a version of a modeling technique first proposed by @malinverno2010. The authors developed a model of the probability of a temporal frequency $f$ in a red noise background given $d$ is a vector of evenly spaced cyclostratigraphic data, $m$ is a vector of sedimentation rates and segment boundaries, and $f$ is a vector of orbital frequencies to use for "tuning"
+The basic astroBayes model implements a version of a modeling technique first proposed by @malinverno2010. The authors developed a model of the probability of a temporal frequency $f$ in a red noise background given $d$ is a vector of evenly spaced cyclostratigraphic data, $m$ is a vector of sedimentation rates and segment boundaries, and $f$ is a vector of orbital frequencies to use for tuning. 
 
 $$
 P(d|m, f) = K \times \frac{C_{data}(f)}{C_{background}(f)}
@@ -29,11 +29,27 @@ $$
 
 Where $C_{data}(f)$ is the periodogram of the data, $C_{background}(f)$ is the red noise background, and K is a normalization constant.
 
+This method produces a tuned *floating* timescale. However since the cyclostratigraphy lacks any absolute age information, some kind of geochronology is required to anchor the time-scale to produce an age-depth model. In the case of this example I have three dated bentonites, each with an age and uncertainty. 
+
+I've been approaching this by introducing a single new parameter called an *anchor point* that sits at the stratigraphic top of the section. My modeling attempts to estimate the most probable age-model by choosing an arbitrary age for the *anchor point* and the calculating the probability of the resulting absolute age-depth model relative to the dated horizons. In effect the floating model "slides" back and forth in time until it lines up with the radioisotopic geochronology. 
+
+To generate an age-depth model that is anchored in absolute time we introduce an additional parameter $\theta$ where the absolute age, $t_i$, at stratigraphic position $i$ is the floating age $fa_i$ plus $theta$: 
+
+$$t_i = fa_i + \theta$$
+
+Since an anchored model implies an absolute age at each depth $t$, we can assess the probability of $t$ at the dated horizons as: 
+
+$$\mathcal{P}(anchor~point| age~model) = \prod_{i = 1}^{i = n} \mathcal{N}(t_i |\mu_i, \sigma^2_i)$$
+
+where the $age~model$ is a vector of ages and stratigraphic positions. 
+
+where $t_i$ is the modeled *age* at stratigraphic position $i$ and $\mu_i$ and $\sigma^2_i$ are the age and variance of the radioisotopic date at stratigraphic position $i$.
+
 # Setup
 
 The package can be loaded using the `library()` function. If `astroBayes` is not installed it can be installed from my GitHub page.
 
-```{r setup, message=FALSE}
+```{r setup, message=FALSE, warning=FALSE}
 # devtools::install_github('robintrayer/astroBayes')
 library(astroBayes)
 # other useful packages
@@ -48,17 +64,39 @@ I've included two testing data sets in this package. the **A** data set is a sim
 
 # Data
 
-```{r}
+```{r, echo = FALSE}
 # load the example data sets --------------------------------------------------
 geochron_data    <- read.csv(file = '../data/data_A/radioisotopic_dates.csv')
 cyclostrat_data  <- read.csv(file = '../data/data_A/cyclostratigraphic_record.csv')
 tuning_frequency <- read.csv(file = '../data/data_A/tuning_frequency.csv')
-true_data        <- read.csv(file = '../data/data_A/true_age.csv')
-segment_edges    <- read.csv(file = '../data/data_A/segment_edges.csv')
+segment_edges <- read.csv(file = '../data/data_A/segment_edges.csv')
 new_positions    <- read.csv(file = '../data/data_A/new_positions.csv')
 ```
 
-# Data Exploration
+The data required to generate and age depth model is stored in a series `.csv` files that can be loaded into R as `data.frames`. These data files have strict column naming requirements and the *they must match the column headers in the example data exactly*.
+
+There are four required data frames. 
+
+1) The geochronology data includes the ages, 1 standard deviation, and stratigraphic positions of any dated layers. Currently at least two dated layers are required. 
+```{r,echo = FALSE}
+geochron_data %>% knitr::kable()
+```
+
+2) the cyclostratigraphic record should include a column of stratigraphic positions and a column of the proxy record value. 
+```{r, echo = FALSE}
+cyclostrat_data %>% head(n = 5) %>% knitr::kable()
+```
+
+3) The frequencies to tune the model should include the frequency in units of 1/time where time is expressed in the same units as the geochronology data. So for example if the geochronology data is in millions of years, long eccentricty would be expressed as 1/0.405.
+
+```{r,echo = FALSE}
+tuning_frequency %>% knitr::kable()
+```
+
+3) The final piece of required data is a data frame that breaks the stratigraphic section into segments, which I cover in more detail in the next section.
+
+# Data Exploration and determining segment boundaries
+Building an age depth model starts with exploring the cylostratigraphic data in using one of the available evolutive methods (EHA, eTimeOpt). I've used EHA here but other methods could work.
 
 ```{r}
 eha_results <- astrochron::eha(cyclostrat_data, 
@@ -91,10 +129,94 @@ eha_results %>%
   ylab('Depth (m)') + 
   scale_y_reverse() + 
   ggtitle('Evolutive Harmonic Analysis of the example data') +
-  theme(legend.position = 'none')
+  theme(legend.position = 'none') + 
+  geom_hline(yintercept = segment_edges$position,
+             linetype = 'dashed',
+             color = 'white')
 ```
 
-# Identifying changes in Sedimentation rate
+The idea is to visually inspect how the EHA plot to identify *segments* of more or less constant accumulation rate. in the example above I've divided the section into 4 segments at 5, 10, and 15 meters. I've also specifed the edges of the model at 0 and 20 meters.
+
+Note that the top and bottom segments don't have cyclostratigraphic data covering the whole stratigraphic range. This is fine but currently each segment needs to have *some* cyclostratigraphic data in it. These segment boundaries are specified in a `data.frame` as shown in the table below.
+
+```{r, echo = FALSE}
+
+segment_edges %>% knitr::kable()
+```
+
+Segment boundaries can also have an uncertainty and specify whether or not you think there is a hiatus at that stratigraphic position. For this example no hiatuses are included so this column is set to `FALSE`.
+
+# Running the model
+Now that the segment boundaries have been determined we can generate an age depth model. The basic modeling function is called `astro_bayes_model()`. Type `help(astro_bayes_model)` for more details. 
+
+`astro_bayes_model()` takes the four data frames discussed above as inputs as shown in the code chunk below. 
+
+```{r, echo = FALSE, message = FALSE, eval=TRUE}
+model_output <- astro_bayes_model(geochron_data    = geochron_data,
+                                  cyclostrat_data  = cyclostrat_data,
+                                  tuning_frequency = tuning_frequency,
+                                  segment_edges = segment_edges,
+                                  iterations = 100,
+                                  burn = 10)
+```
+
+```{r, eval = FALSE}
+model_output <- astro_bayes_model(geochron_data    = geochron_data,
+                                  cyclostrat_data  = cyclostrat_data,
+                                  tuning_frequency = tuning_frequency,
+                                  segment_edges    = segment_edges,
+                                  iterations       = 10000,
+                                  burn             = 1000)
+```
+
+There are two additional argument. `iterations` is the number of MCMC iterations to run the model for and `burn` is the number of initial iterations to discard to allow for model burn-in.
+
+# Viewing the results
+There are some additional plotting an calculation functions built into the `{astroBayes}` package. You can generate several different plot types using the `plot()` function by setting the `type` argument to one of `c('age_depth', 'sed_rate','periodogram' ,'trace', 'cyclostrat')`. 
+
+To view the final age depth model use `type = 'age_depth'`. The Black line is the median model and the shaded region is the 95% credible interval. 
+```{r, fig.width = 6.5, fig.height = 6.5}
+plot(model_output, type = 'age_depth')
+```
+
+To view the model posterior of sedimentation rate use `type = 'sed_rate'` or `type = 'trace'`. By default the plots will be broken into the segments defined in the `segment_edges` data. 
+```{r, fig.width = 6.5, fig.height = 6.5}
+plot(model_output, type = 'sed_rate')
+plot(model_output, type = 'trace')
+```
+
+The tuned periodograms are can be viewed by setting `type = 'periodogram'`. The dashed red lines are the tuning frequencies used, and the colored solid lines are the likelihood distributions for each segment. 
+```{r, fig.width = 6.5, fig.height = 6.5}
+plot(model_output, type = 'periodogram')
+```
+
+Finally you can view the median tuned cyclostratigraphic record by setting `type = 'cyclostrat'`. 
+
+```{r, fig.width = 6.5, fig.height = 3.5}
+plot(model_output, type = 'cyclostrat')
+```
+
+# Predicting New Ages
+You can also predict the age of new stratigraphic positions using the `predict()` function. The new positions should be stored in a data frame using the following format: 
+
+```{r, echo = FALSE}
+new_positions %>% knitr::kable()
+```
+
+```{r}
+predictions <- predict(model_output, new_positions = new_positions)
+```
+
+You can view the results using `plot()`
+```{r}
+# plot the results
+plot(predictions)
+```
+
+The prediction results are reported as the median and 95% credible interval. The raw MCMC results are also availible in `predictions$posterior`. 
+```{r}
+predictions$CI %>% knitr::kable()
+```
 
 # References
 

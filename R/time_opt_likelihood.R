@@ -146,6 +146,7 @@ time_opt_likelihood <- function (cyclostrat_data,
   # execute functions
   # for precession modulations
   res = fitIt(sed_rate, hil, tuning_frequency)
+
   pwrOut = fitIt(sed_rate, time_series , tuning_frequency)
 
   output <- data.frame('sed_rate' = 100 * res[1],

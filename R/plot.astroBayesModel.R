@@ -41,10 +41,9 @@ age_depth_plot <- function(age_model) {
          mapping = aes(x = position,
                        y = age,
                        color = id)) +
-    geom_point(size = 2) +
-    geom_errorbar(mapping = aes(ymin = age - age_sd * 2,
-                                ymax = age + age_sd * 2),
-                  width = 0.75) +
+    geom_point(size = 1) +
+    geom_linerange(mapping = aes(ymin = age - age_sd * 2,
+                                ymax = age + age_sd * 2)) +
     xlab('Depth') +
     ylab('Age') +
     scale_x_reverse() +

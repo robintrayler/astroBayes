@@ -1,12 +1,17 @@
-# INPUTS
-# sed_rate = vector of sedimentation rates
-# segment_edges = sedimentation rate change points
-# cyclostrat = cyclostratigraphic record spanning the range of segment_edges
-# tuning frequencies = vector of tuning frequencies to use
 pgram_likelihood <- function(sed_rate,
                              segment_edges,
                              cyclostrat,
                              tuning_frequency){
+  # this function is an implementation of the probablity calculations from
+  # Malinverno et al. (2010).
+  # INPUTS
+  # sed_rate = vector of sedimentation rates
+  # segment_edges = sedimentation rate change points
+  # cyclostrat = cyclostratigraphic record spanning the range of segment_edges
+  # tuning frequencies = vector of tuning frequencies to use
+  # OUTPUTS
+  # LL = loglikelihood of `sed_rate`
+
   # preallocate storage -------------------------------------------------------
   LL <- vector(length = length(sed_rate))
 

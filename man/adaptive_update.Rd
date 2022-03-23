@@ -23,12 +23,12 @@ adaptive_update(
 
 \item{initial_Cd}{initial guess at the proposal variance}
 
-\item{lower}{lower truncation for the random normal distribtion. Defaults to \code{-1E-10}}
+\item{lower}{lower truncation for the random normal distribution. Defaults to \code{-1E-10}}
 
-\item{upper}{upper truncation for the random normal distribtion. Defaults to \code{1E-10}}
+\item{upper}{upper truncation for the random normal distribution. Defaults to \code{1E-10}}
 }
 \value{
-a list with a whole bunch of stuff in it.
+a a proposed value from \code{chain}
 }
 \description{
 This function is a simple implementation of the adaptive MCMC algorithm of

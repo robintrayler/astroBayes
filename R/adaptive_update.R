@@ -5,15 +5,15 @@
 #' @param i current chain iteration
 #' @param start_index when should the proposal start adapting?
 #' @param initial_Cd initial guess at the proposal variance
-#' @param lower lower truncation for the random normal distribtion. Defaults to `-1E-10`
-#' @param upper upper truncation for the random normal distribtion. Defaults to `1E-10`
+#' @param lower lower truncation for the random normal distribution. Defaults to `-1E-10`
+#' @param upper upper truncation for the random normal distribution. Defaults to `1E-10`
 #'
 #' @import "tidyverse"
 #' @import "dplyr"
 #' @import "tibble"
 #' @importFrom magrittr "%>%"
 #'
-#' @return a list with a whole bunch of stuff in it.
+#' @return a a proposed value from `chain`
 #' @md
 #' @export
 

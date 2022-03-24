@@ -191,7 +191,7 @@ astro_bayes_model <- function(geochron_data,
     model_storage[, j] <- model_storage[, j - 1]
     anchor_point[j] <- anchor_point[j - 1]
 
-    # if there are hiatuses
+    # if there are hiatuses ---------------------------------------------------
     if(n_hiatus > 0) {
       hiatus_storage[j, ] <- hiatus_storage[j - 1, ]
     }
@@ -212,12 +212,13 @@ astro_bayes_model <- function(geochron_data,
 
     # update sedimentation rates ----------------------------------------------
     for(q in 1:ncol(sed_rate)) {
-
+      # get current sed rates
+      current_rates <- sed_rate[j - 1, ]
       # propose a new rate ----------------------------------------------------
       proposed_rate <- adaptive_update(chain = sed_rate[, q],
                                        i = j,
                                        start_index = burn / 2,
-                                       initial_Cd = 0.001,
+                                       initial_Cd = 0.0001,
                                        lower = sed_prior_range[1],
                                        upper = sed_prior_range[2])
 
@@ -236,8 +237,42 @@ astro_bayes_model <- function(geochron_data,
                                         tuning_frequency =
                                           tuning_frequency$frequency)
 
+      # calculate the radioisotopic probability -------------------------------
+      current_rates[q] <- proposed_rate
+
+      model_proposed <- anchor_sed_model(segment_edges = segment_edges,
+                                         sed_rate = current_rates,
+                                         anchor_point = anchor_point[j - 1],
+                                         hiatus_duration = ifelse(
+                                           test = n_hiatus > 0,
+                                           yes = hiatus_storage[j - 1, ],
+                                           no = NA),
+                                         position_grid = position_grid)
+
+      radio_proposed <- radio_likelihood(anchored_model = model_proposed,
+                                         position_grid = position_grid,
+                                         age = geochron_data$age,
+                                         age_sd = geochron_data$age_sd,
+                                         position = geochron_data$position)
+
+      model_current <- anchor_sed_model(segment_edges = segment_edges,
+                                        sed_rate = sed_rate[j - 1, ],
+                                        anchor_point = anchor_point[j - 1],
+                                        hiatus_duration = ifelse(
+                                          test = n_hiatus > 0,
+                                          yes = hiatus_storage[j - 1, ],
+                                          no = NA),
+                                        position_grid = position_grid)
+
+      radio_current <- radio_likelihood(anchored_model = model_current,
+                                        position_grid = position_grid,
+                                        age = geochron_data$age,
+                                        age_sd = geochron_data$age_sd,
+                                        position = geochron_data$position)
+
       # use a Metropolis-Hastings algorithm to accept or reject
-      p <- (proposed_prob) - (current_prob)
+      p <- (proposed_prob + radio_proposed) - (current_prob + radio_current)
+      # p <- (proposed_prob) - (current_prob)
 
       if(!is.na(p)) {
         if(!is.infinite(p)) {
@@ -254,7 +289,7 @@ astro_bayes_model <- function(geochron_data,
                                   i = j,
                                   start_index = burn / 2,
                                   initial_Cd = 0.001,
-                                  lower = -1e-10,
+                                  lower = -1e10,
                                   upper = 1e10)
 
     # anchor the proposed and current models in absolute time -----------------
@@ -311,7 +346,7 @@ astro_bayes_model <- function(geochron_data,
                                        i = j,
                                        start_index = burn/2,
                                        initial_Cd = 0.00001,
-                                       lower = -1e-10,
+                                       lower = 0,
                                        upper = 1e10)
       }
 

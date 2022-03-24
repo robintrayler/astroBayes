@@ -143,7 +143,8 @@ plot_pgram <- function(age_model) {
       periodogram(output = 1,
                   verbose = FALSE,
                   genplot = FALSE,
-                  background = 1) %>%
+                  background = 1,
+                  f0 = TRUE) %>%
       mutate(probability = (Power / AR1_Fit),
              probability = probability / sum(probability),
              time_freq   = Frequency * quantile(age_model$sed_rate[age_model$burn:age_model$iterations, k],

@@ -23,7 +23,8 @@ pgram_likelihood <- function(sed_rate,
       periodogram(output = 1,
                   verbose = FALSE,
                   genplot = FALSE,
-                  background = 1) %>%
+                  background = 1,
+                  f0 = TRUE) %>%
       mutate(probability = (Power / AR1_Fit),
              probability = (probability / sum(probability)),
              time_freq   = Frequency * sed_rate[i]) %>%

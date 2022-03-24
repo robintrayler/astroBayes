@@ -12,10 +12,10 @@
 time_opt_likelihood <- function (cyclostrat_data,
                                  tuning_frequency,
                                  sed_rate = 1,
-                                 fitModPwr=T,
-                                 flow=NULL,
-                                 fhigh=NULL,
-                                 roll=NULL)
+                                 fitModPwr = T,
+                                 flow = NULL,
+                                 fhigh = NULL,
+                                 roll = NULL)
 {
 
   # prepare data array

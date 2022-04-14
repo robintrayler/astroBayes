@@ -67,7 +67,9 @@ astro_bayes_model <- function(geochron_data,
                               segment_edges,
                               sed_prior_range = c(0, 1000),
                               iterations = 10000,
-                              burn = 5000) {
+                              burn = 5000,
+                              f_low = NA,
+                              f_high = NA) {
   # error checking ------------------------------------------------------------
   # geochron data
   if(!all(c('id', 'age', 'age_sd', 'position', 'thickness') %in%
@@ -164,7 +166,7 @@ astro_bayes_model <- function(geochron_data,
   # randomly adjust starting rates
   sed_rate[1, ] <- rnorm(nrow(segment_edges) - 1,
                          mean = mean_rate,
-                         sd = 0.001)
+                         sd = 0.1)
 
   # anchor the initial model in time ------------------------------------------
   model_storage[, 1] <- anchor_sed_model(segment_edges = segment_edges,
@@ -218,7 +220,7 @@ astro_bayes_model <- function(geochron_data,
       proposed_rate <- adaptive_update(chain = sed_rate[, q],
                                        i = j,
                                        start_index = burn / 2,
-                                       initial_Cd = 0.0001,
+                                       initial_Cd = 0.01,
                                        lower = sed_prior_range[1],
                                        upper = sed_prior_range[2])
 
@@ -272,7 +274,6 @@ astro_bayes_model <- function(geochron_data,
 
       # use a Metropolis-Hastings algorithm to accept or reject
       p <- (proposed_prob + radio_proposed) - (current_prob + radio_current)
-      # p <- (proposed_prob) - (current_prob)
 
       if(!is.na(p)) {
         if(!is.infinite(p)) {

@@ -7,41 +7,30 @@ library(viridis)
 # load CIP test case 2 --------------------------------------------------------
 cyclostrat_data <- read.csv(file = './data/CIP_data/case_2/cyclostrat_data.csv')
 true_age <- read.csv(file = './data/CIP_data/case_2/true_age.csv')
+
+# tune on precession only
 tuning_frequency <- read.csv(file = './data/data_A/tuning_frequency.csv') %>%
-  filter(orbital_cycle != 'eccentricity') %>%
-  filter(orbital_cycle != 'obliquity')
-# initial plots ---------------------------------------------------------------
-# cyclostrat_data %>%
-#   ggplot(mapping = aes(x = position,
-#                        y = value)) +
-#   geom_line(color = 'grey') +
-#   xlab('postion (m)')
+  filter(orbital_cycle == 'precession')
 
 # periodogram -----------------------------------------------------------------
-pgram <- cyclostrat_data %>%
+cyclostrat_data %>%
   periodogram(output = 1,
-              genplot = FALSE)
-
-pgram %>%
+              genplot = FALSE,
+              background = 1) %>%
   ggplot(mapping = aes(x = Frequency,
                        y = Power)) +
   geom_line() +
-  xlim(0, 7.5)
+  xlim(0, 7.5) +
+  geom_line(mapping = aes(y = AR1))
 
-# filter out high freqency noise ----------------------------------------------
+# filter out high frequency noise ---------------------------------------------
 cyclostrat_data_filtered <- cyclostrat_data %>%
-  bandpass(flow = 1,
+  bandpass(flow = 2.5,
            fhigh = 7.5,
            genplot = FALSE)
 
-cyclostrat_data_filtered %>%
-  ggplot(mapping = aes(x = position,
-                       y = value)) +
-  geom_line(color = 'grey') +
-  xlab('postion (m)') +
-  ggtitle('bandpass filtered record')
 # eha analysis ----------------------------------------------------------------
-eha_results <- astrochron::eha(cyclostrat_data,
+eha_results <- astrochron::eha(cyclostrat_data_filtered,
                                win = 2,
                                step = 0.01,
                                genplot = FALSE,
@@ -68,16 +57,15 @@ eha_results %>%
   scale_y_reverse() +
   ggtitle('Evolutive Harmonic Analysis') +
   theme(legend.position = 'none')  +
-  xlim(0, 7.5)
-
+  xlim(0, 7.5) +
+  geom_hline(yintercept = 5 + 0.75,
+             color = 'white')
 
 # create synthetic geochronology ----------------------------------------------
-n = 5
-i <- seq_along(true_age[, 1])
-
-date_positions <- true_age[sample(i, n), ]
-
-geochron_data <-
+n = 3 # number of points to generate
+# pick some true ages
+date_positions <- true_age[sample(seq_along(true_age[, 1]), n), ]
+geochron_data  <- # assemble into synthetic geochronology
   data.frame(age = rnorm(n, mean = date_positions$age, sd = 0.01),
              age_sd = rnorm(n, date_positions$age * 0.01, sd = 0.001),
              position = date_positions$position,
@@ -95,33 +83,22 @@ geochron_data %>%
                                xmax = age + age_sd*2)) +
   scale_y_reverse()
 
-# get good inital guess at sed_rate -------------------------------------------
-geochron_data %>%  lm(position ~ age, data = .) %>% coef()
-
-# pgram %>%
-#   ggplot(mapping = aes(x = Frequency * 8.90,
-#                        y = Power)) +
-#   geom_line() +
-#   xlim(0, 50)
-
 # develop segment edges -------------------------------------------------------
 segment_edges <-
-  data.frame(position = c(0, 2, 4, 6.1, 10),
-             thickness = c(0, 0,0, 0.1, 0),
-             hiatus_boundary = c(FALSE, FALSE,FALSE, TRUE, FALSE))
-
+  data.frame(position = c(0, 3, 5.75, 10),
+             thickness = c(0, 0, 0.1, 0),
+             hiatus_boundary = c(FALSE, FALSE, TRUE, FALSE))
 
 # run the model ---------------------------------------------------------------
-
 model_output <- astro_bayes_model(geochron_data = geochron_data,
-                                  cyclostrat_data = cyclostrat_data,
+                                  cyclostrat_data = cyclostrat_data_filtered,
                                   tuning_frequency = tuning_frequency,
                                   segment_edges = segment_edges,
-                                  iterations = 5000,
-                                  burn = 1000,
-                                  sed_prior_range = c(7.5, 20))
+                                  iterations = 50000,
+                                  burn = 2000)
 
-# pdf(file = 'cip_case_2_test2.pdf', width = 8, height = 8)
+# plot the results ------------------------------------------------------------
+pdf(file = 'cip_case_2_test_3_25_2022.pdf', width = 12, height = 12)
 plot(model_output, type = 'age_depth') +
   geom_line(data = true_age,
             mapping = aes(x = position,
@@ -133,18 +110,4 @@ plot(model_output, type = 'trace')
 plot(model_output, type = 'sed_rate')
 plot(model_output, type = 'periodogram')
 plot(model_output, type = 'cyclostrat')
-ggplot(mapping = aes(x = model_output$hiatus_durations,
-                     y = ..density..)) +
-  geom_histogram(fill = 4) +
-  theme_bw() +
-  xlab('hiatus duration (Ma)')
-# dev.off()
-
-
-
-# timeOpt(cbind(cyclostrat_data[,1]*100, cyclostrat_data[,2]), sedmax = 25, sedmin = 5)
-
-# dat <- true_age %>% filter(position > 5)
-
-# mean(diff(dat$position) / diff(dat$age))
-
+dev.off()

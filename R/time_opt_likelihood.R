@@ -1,48 +1,23 @@
-### This function is in development for astrochron: An R Package for Astrochronology
-### Copyright (C) 2020 Stephen R. Meyers
-###
-###########################################################################
-### function timeOptL - (SRM: April 12-14, 2017; September 23-24, 2020)
-###
-### modified from FUNCTION-timeOptL_v9.R, to perform timeOpt using formal
-### likelihood functions
-###########################################################################
-
+# This function is in development for astrochron: An R Package for Astrochronology
+# Copyright (C) 2020 Stephen R. Meyers
+# this function has been modified to work with the astroBayes package in development
+# by Robin B. Trayler, Mark D. Schmitz and Stephen R. Meyers
 
 time_opt_likelihood <- function (cyclostrat_data,
                                  tuning_frequency,
-                                 sed_rate = 1,
-                                 fitModPwr = T,
+                                 sed_rate = NA,
                                  flow = NULL,
                                  fhigh = NULL,
-                                 roll = NULL)
-{
-
-  # prepare data array
-  npts <- length(cyclostrat_data[, 1])
-  dx <- cyclostrat_data[2, 1] - cyclostrat_data[1, 1]
-
-  # standardize data series
-  cyclostrat_data[2]=cyclostrat_data[2] - colMeans(cyclostrat_data[2])
-  cyclostrat_data[2]=cyclostrat_data[2] / sapply(cyclostrat_data[2],sd)
-
-  # convert sed_rate cm/ka to m/ka for processing
-  sed_rate = sed_rate / 100
+                                 roll = NULL) {
 
   #######################################################################################
-  # set up default bandpass frequencies and targets
-  #  first for precession
-  if(is.null(flow)) {flow = 0.035}
-  if(is.null(fhigh)) {fhigh = 0.065}
-  if(is.null(roll)) {roll = 10 ^ 3}
-
-  #######################################################################################
-  # Definition of FUNCTIONS: genCycles, fitIt, calcLogLH
+  # Definition of FUNCTIONS: generate_cycles, fitIt, calcLogLH
   # function to generate cos (real) and sin (imaginary) terms for each target period,
-  #   and convert to spatial cycles, given a particular sed rate in m/ka
-  genCycles <- function(sed_rate,
-                        target_frequencies,
-                        n) {
+  # and convert to spatial cycles, given a particular sed rate in m/ka
+
+  generate_cycles <- function(sed_rate,
+                              target_frequencies,
+                              n) {
     # set up storage matrix
     storage <- matrix(data = 0,
                       nrow = n,
@@ -61,10 +36,10 @@ time_opt_likelihood <- function (cyclostrat_data,
 
   # function to perform fitting
   #  dx, npts passed into function transparently
-  fitIt <- function(sed_rate,
-                    time_series,
-                    target_frequencies) {
-    xm <- genCycles(sed_rate, target_frequencies, npts)
+  fit_it <- function(sed_rate,
+                     time_series,
+                     target_frequencies) {
+    xm <- generate_cycles(sed_rate, target_frequencies, npts)
     lm.0 <- lm(time_series[, 2] ~ xm)
 
     # calculate rho and sigma based on residuals
@@ -74,7 +49,7 @@ time_opt_likelihood <- function (cyclostrat_data,
     sigma = sd(lm.0$residuals)
 
     # calculate log likelihood
-    logLH = calcLogLH(lm.0$residuals, rho, sigma)
+    logLH = calc_LL(lm.0$residuals, rho, sigma)
 
     # return everything
     return(cbind(sed_rate, logLH, rho, sigma))
@@ -83,7 +58,7 @@ time_opt_likelihood <- function (cyclostrat_data,
   # function to perform log-likelihood calculation, including
   #  assessment of correlated residuals, assuming AR1 model
   #  npts passed into function transparently
-  calcLogLH <- function(residuals, rho, sigma)
+  calc_LL <- function(residuals, rho, sigma)
   {
     # calculate Re^-1 (ReInv), as in EQ. A-7 of Malinverno & Briggs (2004)
     # set up array, with zeros
@@ -107,19 +82,36 @@ time_opt_likelihood <- function (cyclostrat_data,
     return(logLH2)
   }
 
-  ans <- vector(mode = 'numeric', length = 7)
+
+
+  # prepare data array
+  npts <- length(cyclostrat_data[, 1])
+  dx <- cyclostrat_data[2, 1] - cyclostrat_data[1, 1]
+
+  # standardize data series
+  cyclostrat_data[2]=cyclostrat_data[2] - colMeans(cyclostrat_data[2])
+  cyclostrat_data[2]=cyclostrat_data[2] / sapply(cyclostrat_data[2],sd)
+
+  # convert sed_rate cm/ka to m/ka for processing
+  sed_rate = sed_rate / 100
+
+  #######################################################################################
+  # set up default bandpass frequencies and targets for precession
+  if(is.null(flow)) {flow <- 0.035}
+  if(is.null(fhigh)) {fhigh <- 0.065}
+  if(is.null(roll)) {roll <- 10 ^ 3}
 
   # CALIBRATE DEPTH SERIES (m) TO TIME (ka)
-  time_series = cyclostrat_data
+  time_series <- cyclostrat_data
 
   # create new time vector
   # it is the index vector for time
-  it <- seq(1, npts, by=1)
-  time = (dx / sed_rate) * (it - 1)
+  it <- seq(1, npts, by = 1)
+  time <- (dx / sed_rate) * (it - 1)
   time_series[1] = time
 
   # bandpass precession or short eccentricity band
-  bp = taner(time_series,
+  bp <- taner(time_series,
              padfac = 2,
              flow = flow,
              fhigh = fhigh,
@@ -131,7 +123,7 @@ time_opt_likelihood <- function (cyclostrat_data,
              verbose = F)
 
   # hilbert transform for instantaneous amplitude
-  hil = hilbert(bp,
+  hil <- hilbert(bp,
                 padfac = 2,
                 demean = T,
                 detrend = F,
@@ -145,9 +137,9 @@ time_opt_likelihood <- function (cyclostrat_data,
 
   # execute functions
   # for precession modulations
-  res = fitIt(sed_rate, hil, tuning_frequency)
+  res = fit_it(sed_rate, hil, tuning_frequency)
 
-  pwrOut = fitIt(sed_rate, time_series , tuning_frequency)
+  pwrOut = fit_it(sed_rate, time_series , tuning_frequency)
 
   output <- data.frame('sed_rate' = 100 * res[1],
                        'likelihood_env' = res[2],
@@ -160,3 +152,6 @@ time_opt_likelihood <- function (cyclostrat_data,
 
   return(output)
 }
+
+
+

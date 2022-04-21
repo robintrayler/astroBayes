@@ -3,12 +3,12 @@
 # this function has been modified to work with the astroBayes package in development
 # by Robin B. Trayler, Mark D. Schmitz and Stephen R. Meyers
 
-time_opt_likelihood <- function (cyclostrat_data,
-                                 tuning_frequency,
-                                 sed_rate = NA,
-                                 flow = NULL,
-                                 fhigh = NULL,
-                                 roll = NULL) {
+time_opt_likelihood <- function(cyclostrat_data,
+                                tuning_frequency,
+                                sed_rate = NA,
+                                flow = NULL,
+                                fhigh = NULL,
+                                roll = NULL) {
 
   #######################################################################################
   # Definition of FUNCTIONS: generate_cycles, fitIt, calcLogLH
@@ -112,24 +112,24 @@ time_opt_likelihood <- function (cyclostrat_data,
 
   # bandpass precession or short eccentricity band
   bp <- taner(time_series,
-             padfac = 2,
-             flow = flow,
-             fhigh = fhigh,
-             roll = roll,
-             demean = T,
-             detrend = F,
-             addmean = F,
-             genplot = F,
-             verbose = F)
+              padfac = 2,
+              flow = flow,
+              fhigh = fhigh,
+              roll = roll,
+              demean = T,
+              detrend = F,
+              addmean = F,
+              genplot = F,
+              verbose = F)
 
   # hilbert transform for instantaneous amplitude
   hil <- hilbert(bp,
-                padfac = 2,
-                demean = T,
-                detrend = F,
-                addmean = F,
-                genplot = F,
-                verbose = F)
+                 padfac = 2,
+                 demean = T,
+                 detrend = F,
+                 addmean = F,
+                 genplot = F,
+                 verbose = F)
 
   # standardize hil to unit variance
   hil[2] = hil[2] - colMeans(hil[2])

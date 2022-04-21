@@ -25,11 +25,15 @@ n = 3 # number of points to generate
 # pick some true ages
 date_positions <- true_age[sample(seq_along(true_age[, 1]), n), ]
 geochron_data  <- # assemble into synthetic geochronology
-  data.frame(age = rnorm(n, mean = date_positions$age, sd = 0.01),
-             age_sd = rnorm(n, date_positions$age * 0.01, sd = 0.001),
-             position = date_positions$position,
-             thickness = 0,
-             id = letters[1:n]) %>%
+  data.frame(
+    # set the mean age to the true age +-
+    # case where accuracy reflects precision
+    age = rnorm(n, mean = date_positions$age, sd = date_positions$age * 0.001),
+    # set standard deviation to 0.1% of the age plus some noise
+    age_sd = rnorm(n, date_positions$age * 0.001, sd = 0.0001),
+    position = date_positions$position,
+    thickness = 0,
+    id = letters[1:n]) %>%
   arrange(position)
 
 
@@ -43,7 +47,7 @@ model_output <- astro_bayes_model(geochron_data = geochron_data,
                                   cyclostrat_data = cyclostrat_data,
                                   tuning_frequency = tuning_frequency,
                                   segment_edges = segment_edges,
-                                  iterations = 40000,
+                                  iterations = 10000,
                                   burn = 2000,
                                   sed_prior_range = c(0, 20))
 
@@ -59,8 +63,8 @@ plot(model_output, type = 'trace')
 
 
 new_positions <- data.frame(position = c(0, 4, 7.5, 15.0, 22.5, 25, 26.23),
-           thickness = c(0, 0,0,0,0,0,0),
-           id = letters[1:7])
+                            thickness = c(0, 0,0,0,0,0,0),
+                            id = letters[1:7])
 
 
 

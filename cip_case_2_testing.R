@@ -21,7 +21,7 @@ cyclostrat_data %>%
                        y = Power)) +
   geom_line() +
   xlim(0, 7.5) +
-  geom_line(mapping = aes(y = AR1))
+  geom_line(mapping = aes(y = AR1_Fit))
 
 # filter out high frequency noise ---------------------------------------------
 cyclostrat_data_filtered <- cyclostrat_data %>%
@@ -66,8 +66,8 @@ n = 3 # number of points to generate
 # pick some true ages
 date_positions <- true_age[sample(seq_along(true_age[, 1]), n), ]
 geochron_data  <- # assemble into synthetic geochronology
-  data.frame(age = rnorm(n, mean = date_positions$age, sd = 0.01),
-             age_sd = rnorm(n, date_positions$age * 0.01, sd = 0.001),
+  data.frame(age = rnorm(n, mean = date_positions$age, sd = 0.001),
+             age_sd = rnorm(n, date_positions$age * 0.001, sd = 0.0001),
              position = date_positions$position,
              thickness = 0,
              id = letters[1:n]) %>%
@@ -94,11 +94,11 @@ model_output <- astro_bayes_model(geochron_data = geochron_data,
                                   cyclostrat_data = cyclostrat_data_filtered,
                                   tuning_frequency = tuning_frequency,
                                   segment_edges = segment_edges,
-                                  iterations = 50000,
+                                  iterations = 10000,
                                   burn = 2000)
 
 # plot the results ------------------------------------------------------------
-pdf(file = 'cip_case_2_test_3_25_2022.pdf', width = 12, height = 12)
+# pdf(file = 'cip_case_2_test_3_25_2022.pdf', width = 12, height = 12)
 plot(model_output, type = 'age_depth') +
   geom_line(data = true_age,
             mapping = aes(x = position,
@@ -110,4 +110,4 @@ plot(model_output, type = 'trace')
 plot(model_output, type = 'sed_rate')
 plot(model_output, type = 'periodogram')
 plot(model_output, type = 'cyclostrat')
-dev.off()
+# dev.off()

@@ -68,7 +68,7 @@ astro_bayes_model <- function(geochron_data,
                               sed_prior_range = c(0, 50),
                               iterations = 10000,
                               burn = 5000,
-                              method = c('time_opt', 'malinverno')) {
+                              method = NA) {
   # error checking ------------------------------------------------------------
   # geochron data
   if(!all(c('id', 'age', 'age_sd', 'position', 'thickness') %in%
@@ -111,6 +111,8 @@ astro_bayes_model <- function(geochron_data,
   if(!(nrow(tuning_frequency) > 0)) {
     stop('tuning_frequency has 0 rows. It must contain at least 1 row')
   }
+
+  if(is.na(method)) {method = 'time_opt'}
 
   # check to make sure things are in order ------------------------------------
   geochron_data   <- geochron_data %>% arrange(position)

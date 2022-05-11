@@ -1,8 +1,12 @@
+# this is a wrapper function to calculate model likelihoods
+# there are two options `malinverno` and `time_opt`
+#
+
 calculate_likelihood <- function(sed_rate,
                                  segment_edges,
                                  cyclostrat_data,
                                  tuning_frequency,
-                                 method = 'time_opt'){
+                                 method = NA){
 
   # preallocate storage -------------------------------------------------------
   LL <- vector(length = length(sed_rate))

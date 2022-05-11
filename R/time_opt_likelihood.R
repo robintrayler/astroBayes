@@ -20,11 +20,11 @@
 #' @export
 #'
 time_opt_likelihood <- function(cyclostrat_data,
-                                   sed_rate,
-                                   f_low = 0.035,
-                                   f_high = 0.065,
-                                   roll = 10 ^ 3,
-                                   tuning_frequency) {
+                                sed_rate,
+                                tuning_frequency,
+                                f_low = 0.035,
+                                f_high = 0.065,
+                                roll = 10 ^ 3) {
 
   # convert sed_rate to m/ka
   sed_rate <- sed_rate * 0.001 # convert to m/ka

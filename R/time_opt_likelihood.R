@@ -3,155 +3,111 @@
 # this function has been modified to work with the astroBayes package in development
 # by Robin B. Trayler, Mark D. Schmitz and Stephen R. Meyers
 
+# sed_rate should be in m/Ma
+# tuning_frequency should be in Ma, 1/Ma, with cycles labeled
+
+
+#' Haario et al. (2001)
+#' @name time_opt_likelihood
+
+#' @import "tidyverse"
+#' @import "dplyr"
+#' @import "tibble"
+#' @importFrom magrittr "%>%"
+#'
+#' @return a a proposed value from `chain`
+#' @md
+#' @export
+#'
 time_opt_likelihood <- function(cyclostrat_data,
-                                tuning_frequency,
-                                sed_rate = NA,
-                                flow = NULL,
-                                fhigh = NULL,
-                                roll = NULL) {
+                                   sed_rate,
+                                   f_low = 0.035,
+                                   f_high = 0.065,
+                                   roll = 10 ^ 3,
+                                   tuning_frequency) {
 
-  #######################################################################################
-  # Definition of FUNCTIONS: generate_cycles, fitIt, calcLogLH
-  # function to generate cos (real) and sin (imaginary) terms for each target period,
-  # and convert to spatial cycles, given a particular sed rate in m/ka
+  # convert sed_rate to m/ka
+  sed_rate <- sed_rate * 0.001 # convert to m/ka
 
-  generate_cycles <- function(sed_rate,
-                              target_frequencies,
-                              n) {
-    # set up storage matrix
-    storage <- matrix(data = 0,
-                      nrow = n,
-                      ncol = 2 * length(target_frequencies))
+  # pull out eccentricity frequencies and convert to ka
+  target_E <- tuning_frequency %>%
+    filter(orbital_cycle == 'eccentricity') %>%
+    pull(period) * 1000
 
-    # loop through target frequencies
-    for (i in 1:length(target_frequencies)) {
-      storage[,2 * i-1] <- cos( (2*pi) /
-                                  (target_frequencies[i]) * (dx / sed_rate) * (1:n))
+  # pull out precession frequencies and convert to ka
+  target_P <- tuning_frequency %>%
+    filter(orbital_cycle == 'precession') %>%
+    pull(period) * 1000
 
-      storage[,2 * i] <- sin( (2*pi) /
-                                (target_frequencies[i]) * (dx / sed_rate) * (1:n))
-    }
-    return(storage)
-  }
+  # put it all togehter
+  target_total <- c(target_E, target_P)
 
-  # function to perform fitting
-  #  dx, npts passed into function transparently
-  fit_it <- function(sed_rate,
-                     time_series,
-                     target_frequencies) {
-    xm <- generate_cycles(sed_rate, target_frequencies, npts)
-    lm.0 <- lm(time_series[, 2] ~ xm)
-
-    # calculate rho and sigma based on residuals
-    rho = cor(lm.0$residuals[1:(npts - 1)],
-              lm.0$residuals[2:npts])
-
-    sigma = sd(lm.0$residuals)
-
-    # calculate log likelihood
-    logLH = calc_LL(lm.0$residuals, rho, sigma)
-
-    # return everything
-    return(cbind(sed_rate, logLH, rho, sigma))
-  }
-
-  # function to perform log-likelihood calculation, including
-  #  assessment of correlated residuals, assuming AR1 model
-  #  npts passed into function transparently
-  calc_LL <- function(residuals, rho, sigma)
-  {
-    # calculate Re^-1 (ReInv), as in EQ. A-7 of Malinverno & Briggs (2004)
-    # set up array, with zeros
-    ReInv <- double(npts * npts)
-    dim(ReInv) <-c(npts, npts)
-    # put 1+rho^2 on diagonal
-    ReInv[row(ReInv)==col(ReInv)] = 1+rho^2
-    # except at (1,1) and (npts,npts), which have a value of 1
-    ReInv[1,1] = 1
-    ReInv[npts,npts] = 1
-    # put -rho on subdiagonal
-    ReInv[(row(ReInv)-1)==col(ReInv)] = -1*rho
-    # put -rho on superdiagonal
-    ReInv[(row(ReInv)+1)==col(ReInv)] = -1*rho
-    # now multiple matrix by 1/(1-rho^2)
-    ReInv = ReInv/(1-rho^2)
-    # calculate log-likelihood
-    logLH2 = ( npts*log(2*pi) ) + ( 2*npts*log(sigma) ) + ( (npts-1)*log(1-rho^2) )
-    logLH2 = logLH2 + (1/(sigma^2)) * t(residuals) %*% ReInv %*% residuals
-    logLH2 = -0.5 * logLH2
-    return(logLH2)
-  }
-
-
-
-  # prepare data array
-  npts <- length(cyclostrat_data[, 1])
+  # prepare data array --------------------------------------------------------
+  cyclostrat_data = data.frame(cyclostrat_data)
+  n_pts <- length(cyclostrat_data[, 1])
   dx <- cyclostrat_data[2, 1] - cyclostrat_data[1, 1]
 
-  # standardize data series
+  # standardize data series ---------------------------------------------------
   cyclostrat_data[2]=cyclostrat_data[2] - colMeans(cyclostrat_data[2])
-  cyclostrat_data[2]=cyclostrat_data[2] / sapply(cyclostrat_data[2],sd)
+  cyclostrat_data[2]=cyclostrat_data[2] / sapply(cyclostrat_data[2], sd)
 
-  # convert sed_rate cm/ka to m/ka for processing
-  sed_rate = sed_rate / 100
+  # check minimum and maximum sedimentation rates.
+  # sedmin is now in m/ka, dx is in meters.
+  NyqFreq <- sed_rate / (2 * dx)
+  RayFreq <- sed_rate / (n_pts * dx)
 
-  #######################################################################################
-  # set up default bandpass frequencies and targets for precession
-  if(is.null(flow)) {flow <- 0.035}
-  if(is.null(fhigh)) {fhigh <- 0.065}
-  if(is.null(roll)) {roll <- 10 ^ 3}
-
-  # CALIBRATE DEPTH SERIES (m) TO TIME (ka)
-  time_series <- cyclostrat_data
-
+  # CALIBRATE DEPTH SERIES (m) TO TIME (ka) -----------------------------------
+  time_series = cyclostrat_data
   # create new time vector
   # it is the index vector for time
-  it <- seq(1, npts, by = 1)
-  time <- (dx / sed_rate) * (it - 1)
+  it <- seq(1, n_pts, by = 1)
+  time = (dx / sed_rate) * (it - 1)
   time_series[1] = time
 
   # bandpass precession or short eccentricity band
-  bp <- taner(time_series,
-              padfac = 2,
-              flow = flow,
-              fhigh = fhigh,
-              roll = roll,
-              demean = T,
-              detrend = F,
-              addmean = F,
-              genplot = F,
-              verbose = F)
+  bp = taner(time_series,
+             padfac=2,
+             flow=f_low,
+             fhigh=f_high,
+             roll=roll,
+             demean=T,
+             detrend=F,
+             addmean=F,
+             genplot=F,
+             verbose=F)
 
   # hilbert transform for instantaneous amplitude
-  hil <- hilbert(bp,
-                 padfac = 2,
-                 demean = T,
-                 detrend = F,
-                 addmean = F,
-                 genplot = F,
-                 verbose = F)
-
+  hil = hilbert(bp,
+                padfac=2,
+                demean=T,
+                detrend=F,
+                addmean=F,
+                genplot=F,
+                verbose=F)
   # standardize hil to unit variance
-  hil[2] = hil[2] - colMeans(hil[2])
-  hil[2] = hil[2] / sd(hil[, 2])
+  hil[2] <- hil[2] - colMeans(hil[2])
+  hil[2] <- hil[2] / sd(hil[, 2])
 
-  # execute functions
+  # execute functions ---------------------------------------------------------
   # for precession modulations
-  res = fit_it(sed_rate, hil, tuning_frequency)
+  result <- fit_it(sed_rate = sed_rate,
+                   time_series = hil,
+                   target_in = target_E,
+                   n_pts = n_pts,
+                   dx = dx)
 
-  pwrOut = fit_it(sed_rate, time_series , tuning_frequency)
+  power_out <- fit_it(sed_rate,
+                      time_series = time_series,
+                      target_in = target_total,
+                      n_pts = n_pts,
+                      dx = dx)
 
-  output <- data.frame('sed_rate' = 100 * res[1],
-                       'likelihood_env' = res[2],
-                       'likelihood_spec' = pwrOut[2],
-                       'env_rho' = res[3],
-                       'env_sigma' = res[4],
-                       'pwr_rho' = pwrOut[3],
-                       'pwr_sigma' = pwrOut[4]) %>%
-    mutate(likelihood_combined = likelihood_env + likelihood_spec)
+  # for short eccentricity modulations
+  answer <- data.frame(
+    sed_rate = result$sed_rate * 1000,
+    LL_env   = result$logLL,
+    LL_pow   = power_out$logLL) %>%
+    mutate(LL_total = LL_env + LL_pow)
 
-  return(output)
+  return(answer)
 }
-
-
-

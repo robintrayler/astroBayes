@@ -10,9 +10,10 @@ astro_bayes_model(
   cyclostrat_data,
   tuning_frequency,
   segment_edges,
-  sed_prior_range = c(0, 1000),
+  sed_prior_range = c(0, 50),
   iterations = 10000,
-  burn = 5000
+  burn = 5000,
+  method = NA
 )
 }
 \arguments{

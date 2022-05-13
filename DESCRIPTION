@@ -17,7 +17,7 @@ Imports:
     astrochron, 
     progress,
     magrittr
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Suggests: 
     rmarkdown,
     knitr

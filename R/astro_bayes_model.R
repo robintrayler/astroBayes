@@ -131,6 +131,10 @@ astro_bayes_model <- function(geochron_data,
   sed_rate <- matrix(nrow = iterations,
                      ncol = nrow(segment_edges) - 1)
 
+  segment_storage <- matrix(nrow = iterations,
+                            ncol = nrow(segment_edges))
+
+  segment_storage[1, ] <- segment_edges$position
   # store all probabilities and anchor point
   anchor_point <- vector(length = iterations)
 
@@ -206,6 +210,33 @@ astro_bayes_model <- function(geochron_data,
                                     max = master_edges$position +
                                       master_edges$thickness / 2)
 
+    # # update segment_edges ----------------------------------------------------
+    #
+    # for(w in 1:ncol(segment_storage)) {
+    #   tmp_segments <- segment_storage[j - 1, ]
+    #   tmp_segments[w]  <- adaptive_update(chain = segment_storage[, w],
+    #                                       i = j,
+    #                                       start_index = burn,
+    #                                       lower = segment_edges$position[w] -
+    #                                         segment_edges$thickness[w]/2,
+    #                                       upper = segment_edges$position[w] +
+    #                                         segment_edges$thickness[w]/2)
+    #
+    #   # calculate probability -------------------------------------------------
+    #   proposed_prob <- calculate_likelihood(cyclostrat_data = cyclostrat_data,
+    #                                         tuning_frequency = tuning_frequency,
+    #                                         sed_rate = sed_rate[j - 1, w],
+    #                                         segment_edges = tmp_segments[w:(w + 1)],
+    #                                         method = method)
+    #
+    #   current_prob <- calculate_likelihood(cyclostrat_data = cyclostrat_data,
+    #                                        tuning_frequency = tuning_frequency,
+    #                                        sed_rate = sed_rate[j - 1, w],
+    #                                        segment_edges = segment_edges$position[w:(w + 1)],
+    #                                        method = method)
+    # }
+
+
     # randomly geochronology positions ----------------------------------------
     geochron_data$position = runif(nrow(master_geochron),
                                    min = master_geochron$position -
@@ -228,34 +259,19 @@ astro_bayes_model <- function(geochron_data,
       # calculate the probability ---------------------------------------------
 
       proposed_prob <- calculate_likelihood(cyclostrat_data = cyclostrat_data,
-                                          tuning_frequency = tuning_frequency,
-                                          sed_rate = proposed_rate,
-                                          segment_edges = segment_edges$position[q:(q + 1)],
-                                          method = method)
-
-      # proposed_prob <- pgram_likelihood(sed_rate = proposed_rate,
-      #                                   segment_edges =
-      #                                     segment_edges$position[q:(q + 1)],
-      #                                   cyclostrat = cyclostrat_data,
-      #                                   tuning_frequency =
-      #                                     tuning_frequency$frequency)
+                                            tuning_frequency = tuning_frequency,
+                                            sed_rate = proposed_rate,
+                                            segment_edges = segment_edges$position[q:(q + 1)],
+                                            method = method)
 
       current_prob <- calculate_likelihood(cyclostrat_data = cyclostrat_data,
-                           tuning_frequency = tuning_frequency,
-                           sed_rate = sed_rate[j - 1, q],
-                           segment_edges = segment_edges$position[q:(q + 1)],
-                           method = method)
-
-      # current_prob  <- pgram_likelihood(sed_rate = sed_rate[j - 1, q],
-      #                                   segment_edges =
-      #                                     segment_edges$position[q:(q + 1)],
-      #                                   cyclostrat = cyclostrat_data,
-      #                                   tuning_frequency =
-      #                                     tuning_frequency$frequency)
+                                           tuning_frequency = tuning_frequency,
+                                           sed_rate = sed_rate[j - 1, q],
+                                           segment_edges = segment_edges$position[q:(q + 1)],
+                                           method = method)
 
       # calculate the radioisotopic probability -------------------------------
       current_rates[q] <- proposed_rate
-
       model_proposed <- anchor_sed_model(segment_edges = segment_edges,
                                          sed_rate = current_rates,
                                          anchor_point = anchor_point[j - 1],

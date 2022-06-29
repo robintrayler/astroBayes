@@ -65,7 +65,7 @@ astro_bayes_model <- function(geochron_data,
                               cyclostrat_data,
                               tuning_frequency,
                               segment_edges,
-                              sed_prior_range = c(0, 50),
+                              sed_prior_range = c(0, 100),
                               iterations = 10000,
                               burn = 5000,
                               method = NA) {
@@ -112,7 +112,8 @@ astro_bayes_model <- function(geochron_data,
     stop('tuning_frequency has 0 rows. It must contain at least 1 row')
   }
 
-  if(is.na(method)) {method = 'time_opt'}
+  # use malinverno probability if not specified
+  if(is.na(method)) {method = 'malinverno'}
 
   # check to make sure things are in order ------------------------------------
   geochron_data   <- geochron_data %>% arrange(position)

@@ -40,5 +40,3 @@ pgram_likelihood <- function(sed_rate,
   return(LL)
 }
 
-
-

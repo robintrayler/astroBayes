@@ -13,6 +13,7 @@
 #' @import "ggplot2"
 #' @import "cowplot"
 #' @import "viridis"
+#' @import "ggridges"
 #'
 #' @return a list with a whole bunch of stuff in it.
 #' @md
@@ -36,32 +37,67 @@ plot.astroBayesModel <- function(age_model,
 
 ###############################################################################
 age_depth_plot <- function(age_model) {
-  # make the age_depth plot ---------------------------------------------------
-  ggplot(data = age_model$geochron_data,
-         mapping = aes(x = position,
-                       y = age,
-                       color = id)) +
-    geom_point(size = 1) +
-    geom_linerange(mapping = aes(ymin = age - age_sd * 2,
-                                ymax = age + age_sd * 2)) +
-    xlab('Depth') +
-    ylab('Age') +
-    scale_x_reverse() +
-    coord_flip() +
+  # assemble ridges for plotting
+  n = 2000
+  ridges <- age_model$geochron_data %>%
+    mutate(low = age - age_sd * 4, high = age + age_sd * 4)  %>%
+    uncount(n, .id = 'row') %>%
+    mutate(x = (1 - row/n) * low + row/n*high,
+           density = dnorm(x, age, age_sd))
+
+  # make the plot
+  ridges %>%
+    ggplot(mapping = aes(x = x,
+                         y = position,
+                         height = density,
+                         group = id,
+                         fill = id)) +
+    geom_density_ridges(stat = 'identity',
+                        scale = 0.25,
+                        color = NA) +
+    ylab('Depth') +
+    xlab('Age') +
+    scale_y_reverse() +
     geom_ribbon(data = age_model$CI,
-                mapping = aes(ymin = CI_2.5,
-                              ymax = CI_97.5,
-                              x = position),
+                mapping = aes(xmin = CI_2.5,
+                              xmax = CI_97.5,
+                              y = position),
                 inherit.aes = FALSE,
                 alpha = 0.25) +
     geom_line(data = age_model$CI,
-              mapping = aes(x = position,
-                            y = median),
+              mapping = aes(y = position,
+                            x = median),
               inherit.aes = FALSE) +
     theme_bw() +
     theme(legend.position = 'top') +
-    # scale_color_brewer(palette  = "Accent")
-    scale_color_viridis(discrete = TRUE, option = 'D', end = 0.9)
+    scale_fill_viridis(discrete = TRUE, option = 'plasma', end = 0.9)
+
+  # make the age_depth plot ---------------------------------------------------
+  # ggplot(data = age_model$geochron_data,
+  #        mapping = aes(x = position,
+  #                      y = age,
+  #                      color = id)) +
+  #   geom_point(size = 1) +
+  #   geom_linerange(mapping = aes(ymin = age - age_sd * 2,
+  #                                ymax = age + age_sd * 2)) +
+  #   xlab('Depth') +
+  #   ylab('Age') +
+  #   scale_x_reverse() +
+  #   coord_flip() +
+  #   geom_ribbon(data = age_model$CI,
+  #               mapping = aes(ymin = CI_2.5,
+  #                             ymax = CI_97.5,
+  #                             x = position),
+  #               inherit.aes = FALSE,
+  #               alpha = 0.25) +
+  #   geom_line(data = age_model$CI,
+  #             mapping = aes(x = position,
+  #                           y = median),
+  #             inherit.aes = FALSE) +
+  #   theme_bw() +
+  #   theme(legend.position = 'top') +
+  #   # scale_color_brewer(palette  = "Accent")
+  #   scale_color_viridis(discrete = TRUE, option = 'D', end = 0.9)
 }
 ###############################################################################
 plot_sed_rate <- function(age_model) {

@@ -54,7 +54,8 @@ age_depth_plot <- function(age_model) {
                          fill = id)) +
     geom_density_ridges(stat = 'identity',
                         scale = 0.25,
-                        color = NA) +
+                        color = NA,
+                        alpha = 0.75) +
     ylab('Depth') +
     xlab('Age') +
     scale_y_reverse() +

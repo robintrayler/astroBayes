@@ -17,23 +17,24 @@ plot.astroBayesPrediction <- function(age_predictions) {
 
   # add the error bars for the new points -------------------------------------
   p <- p + geom_point(data = age_predictions$CI,
-                      mapping = aes(y = median,
-                                    x = position,
+                      mapping = aes(x = median,
+                                    y = position,
                                     group = id),
-                      color = 'tomato') +
+                      color = 'tomato',
+                      inherit.aes = FALSE) +
     geom_errorbar(data = age_predictions$CI,
                   mapping = aes(
-                    ymin = CI_2.5,
-                    ymax = CI_97.5,
-                    x = position),
+                    xmin = CI_2.5,
+                    xmax = CI_97.5,
+                    y = position),
                   width = 0,
                   color = 'tomato',
                   inherit.aes = FALSE) +
     geom_errorbar(data = age_predictions$CI,
                   mapping = aes(
-                    xmin = position - thickness/2,
-                    xmax = position + thickness/2,
-                    y = median),
+                    ymin = position - thickness/2,
+                    ymax = position + thickness/2,
+                    x = median),
                   width = 0,
                   color = 'tomato',
                   inherit.aes = FALSE)

@@ -207,7 +207,7 @@ plot_pgram <- function(age_model) {
       theme_bw() +
       theme(legend.position = 'none',
             axis.text.y = element_blank()) +
-      xlab('frequency (m/Ma)') +
+      xlab('frequency (cycles/Ma)') +
       theme(legend.position = 'none')
   }
   cowplot::plot_grid(plotlist = cowplot::align_plots(plotlist = plots))

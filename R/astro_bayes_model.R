@@ -77,8 +77,8 @@ astro_bayes_model <- function(geochron_data,
           Column names must be exactly: "id", "age", "age_sd", "position", "thickness"')}
 
   # segment edges
-  if(!all(c('position', 'thickness', 'hiatus_boundary') %in% names(segment_edges)))
-  {stop('segment_edges columns are named incorrectly. \n
+  if(!all(c('position', 'thickness', 'hiatus_boundary') %in% names(segment_edges))
+  ) {stop('segment_edges columns are named incorrectly. \n
           Column names must be exactly: "position", "thickness", "hiatus_boundary"')}
 
   # cyclostrat data
@@ -180,10 +180,11 @@ astro_bayes_model <- function(geochron_data,
                                          anchor_point = anchor_point[1],
                                          position_grid = position_grid,
                                          hiatus_duration =
-                                           ifelse(
-                                             test = n_hiatus > 0,
-                                             yes = hiatus_storage[1, ],
-                                             no = NA)
+                                           if(n_hiatus > 0) {
+                                             hiatus_storage[1, ]
+                                           } else {
+                                             NA
+                                           }
   )
 
   # run the MCMC model --------------------------------------------------------
@@ -210,33 +211,6 @@ astro_bayes_model <- function(geochron_data,
                                       master_edges$thickness / 2,
                                     max = master_edges$position +
                                       master_edges$thickness / 2)
-
-    # # update segment_edges ----------------------------------------------------
-    #
-    # for(w in 1:ncol(segment_storage)) {
-    #   tmp_segments <- segment_storage[j - 1, ]
-    #   tmp_segments[w]  <- adaptive_update(chain = segment_storage[, w],
-    #                                       i = j,
-    #                                       start_index = burn,
-    #                                       lower = segment_edges$position[w] -
-    #                                         segment_edges$thickness[w]/2,
-    #                                       upper = segment_edges$position[w] +
-    #                                         segment_edges$thickness[w]/2)
-    #
-    #   # calculate probability -------------------------------------------------
-    #   proposed_prob <- calculate_likelihood(cyclostrat_data = cyclostrat_data,
-    #                                         tuning_frequency = tuning_frequency,
-    #                                         sed_rate = sed_rate[j - 1, w],
-    #                                         segment_edges = tmp_segments[w:(w + 1)],
-    #                                         method = method)
-    #
-    #   current_prob <- calculate_likelihood(cyclostrat_data = cyclostrat_data,
-    #                                        tuning_frequency = tuning_frequency,
-    #                                        sed_rate = sed_rate[j - 1, w],
-    #                                        segment_edges = segment_edges$position[w:(w + 1)],
-    #                                        method = method)
-    # }
-
 
     # randomly geochronology positions ----------------------------------------
     geochron_data$position = runif(nrow(master_geochron),
@@ -276,10 +250,12 @@ astro_bayes_model <- function(geochron_data,
       model_proposed <- anchor_sed_model(segment_edges = segment_edges,
                                          sed_rate = current_rates,
                                          anchor_point = anchor_point[j - 1],
-                                         hiatus_duration = ifelse(
-                                           test = n_hiatus > 0,
-                                           yes = hiatus_storage[j - 1, ],
-                                           no = NA),
+                                         hiatus_duration =
+                                           if(n_hiatus > 0) {
+                                             hiatus_storage[1, ]
+                                           } else {
+                                             NA
+                                           },
                                          position_grid = position_grid)
 
       radio_proposed <- radio_likelihood(anchored_model = model_proposed,
@@ -291,10 +267,12 @@ astro_bayes_model <- function(geochron_data,
       model_current <- anchor_sed_model(segment_edges = segment_edges,
                                         sed_rate = sed_rate[j - 1, ],
                                         anchor_point = anchor_point[j - 1],
-                                        hiatus_duration = ifelse(
-                                          test = n_hiatus > 0,
-                                          yes = hiatus_storage[j - 1, ],
-                                          no = NA),
+                                        hiatus_duration =
+                                          if(n_hiatus > 0) {
+                                            hiatus_storage[1, ]
+                                          } else {
+                                            NA
+                                          },
                                         position_grid = position_grid)
 
       radio_current <- radio_likelihood(anchored_model = model_current,
@@ -328,19 +306,23 @@ astro_bayes_model <- function(geochron_data,
     model_proposed <- anchor_sed_model(segment_edges = segment_edges,
                                        sed_rate = sed_rate[j, ],
                                        anchor_point = new_anchor,
-                                       hiatus_duration = ifelse(
-                                         test = n_hiatus > 0,
-                                         yes = hiatus_storage[j - 1, ],
-                                         no = NA),
+                                       hiatus_duration =
+                                         if(n_hiatus > 0) {
+                                           hiatus_storage[1, ]
+                                         } else {
+                                           NA
+                                         },
                                        position_grid = position_grid)
 
     model_current <- anchor_sed_model(segment_edges = segment_edges,
                                       sed_rate = sed_rate[j, ],
                                       anchor_point = anchor_point[j - 1],
-                                      hiatus_duration = ifelse(
-                                        test = n_hiatus > 0,
-                                        yes = hiatus_storage[j - 1, ],
-                                        no = NA),
+                                      hiatus_duration =
+                                        if(n_hiatus > 0) {
+                                          hiatus_storage[1, ]
+                                        } else {
+                                          NA
+                                        },
                                       position_grid = position_grid)
 
     # calculate radiometric probability ---------------------------------------
@@ -405,11 +387,11 @@ astro_bayes_model <- function(geochron_data,
                                             age_sd = geochron_data$age_sd,
                                             position = geochron_data$position)
 
-      duration_current <- radio_likelihood(anchored_model = model_current,
-                                           position_grid = position_grid,
-                                           age = geochron_data$age,
-                                           age_sd = geochron_data$age_sd,
-                                           position = geochron_data$position)
+      duration_current  <- radio_likelihood(anchored_model = model_current,
+                                            position_grid = position_grid,
+                                            age = geochron_data$age,
+                                            age_sd = geochron_data$age_sd,
+                                            position = geochron_data$position)
 
       # use a Metropolis-Hastings algorithm to accept or reject
       p <- duration_proposed - duration_current

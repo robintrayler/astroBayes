@@ -252,7 +252,7 @@ astro_bayes_model <- function(geochron_data,
                                          anchor_point = anchor_point[j - 1],
                                          hiatus_duration =
                                            if(n_hiatus > 0) {
-                                             hiatus_storage[1, ]
+                                             hiatus_storage[j - 1, ]
                                            } else {
                                              NA
                                            },
@@ -269,7 +269,7 @@ astro_bayes_model <- function(geochron_data,
                                         anchor_point = anchor_point[j - 1],
                                         hiatus_duration =
                                           if(n_hiatus > 0) {
-                                            hiatus_storage[1, ]
+                                            hiatus_storage[j - 1, ]
                                           } else {
                                             NA
                                           },
@@ -308,7 +308,7 @@ astro_bayes_model <- function(geochron_data,
                                        anchor_point = new_anchor,
                                        hiatus_duration =
                                          if(n_hiatus > 0) {
-                                           hiatus_storage[1, ]
+                                           hiatus_storage[j - 1, ]
                                          } else {
                                            NA
                                          },
@@ -319,7 +319,7 @@ astro_bayes_model <- function(geochron_data,
                                       anchor_point = anchor_point[j - 1],
                                       hiatus_duration =
                                         if(n_hiatus > 0) {
-                                          hiatus_storage[1, ]
+                                          hiatus_storage[j - 1, ]
                                         } else {
                                           NA
                                         },
@@ -358,7 +358,7 @@ astro_bayes_model <- function(geochron_data,
       for(k in 1:n_hiatus) {
         duration[k] <- adaptive_update(chain = hiatus_storage[, k],
                                        i = j,
-                                       start_index = burn/2,
+                                       start_index = burn / 2,
                                        initial_Cd = 0.00001,
                                        lower = 0,
                                        upper = 1e10)

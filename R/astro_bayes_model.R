@@ -38,6 +38,7 @@
 #' @import "astrochron"
 #' @import "tibble"
 #' @importFrom magrittr "%>%"
+#' @import "beepr"
 #'
 #' @return The function returns a list of class `astroBayesModel`
 #' which contains the following objects:
@@ -115,8 +116,14 @@ astro_bayes_model <- function(geochron_data,
   # use malinverno probability if not specified
   if(is.na(method)) {method = 'malinverno'}
 
+
+  # check to see if multiple cyclostratigrapic records are in use
+  # if(!is.list(cyclostrat_data)) {
+  #   cyclostrat_data <- list(cyclostrat_data)
+  # }
+
   # check to make sure things are in order ------------------------------------
-  geochron_data   <- geochron_data %>% arrange(position)
+  geochron_data   <- geochron_data   %>% arrange(position)
   cyclostrat_data <- cyclostrat_data %>% arrange(position)
 
   # store the input data for when positions move around later
@@ -232,6 +239,27 @@ astro_bayes_model <- function(geochron_data,
                                        upper = sed_prior_range[2])
 
       # calculate the probability ---------------------------------------------
+      # proposed_prob <- vector()
+      # for(i in seq_along(cyclostrat_data)) {
+      #   proposed_prob[i] <- calculate_likelihood(sed_rate = proposed_rate,
+      #                                            segment_edges = segment_edges$position[q:(q + 1)],
+      #                                            cyclostrat = cyclostrat_data[[i]],
+      #                                            tuning_frequency = tuning_frequency,
+      #                                            method = method)
+      #
+      # }
+      # proposed_prob <- sum(proposed_prob)
+      #
+      # current_prob <- vector()
+      # for(i in seq_along(cyclostrat_data)) {
+      #   current_prob[i] <- calculate_likelihood(sed_rate = sed_rate[j - 1, q],
+      #                                            segment_edges = segment_edges$position[q:(q + 1)],
+      #                                            cyclostrat = cyclostrat_data[[i]],
+      #                                            tuning_frequency = tuning_frequency,
+      #                                            method = method)
+      #
+      # }
+      # current_prob <- sum(current_prob)
 
       proposed_prob <- calculate_likelihood(cyclostrat_data = cyclostrat_data,
                                             tuning_frequency = tuning_frequency,
@@ -459,5 +487,6 @@ astro_bayes_model <- function(geochron_data,
 
   # assign a class and return
   class(output) <- "astroBayesModel"
+  beepr::beep(4)
   return(output)
 }

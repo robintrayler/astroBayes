@@ -34,5 +34,3 @@ malinverno_likelihood <- function(cyclostrat_data,
     sum()
   return(LL)
 }
-
-

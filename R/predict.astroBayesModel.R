@@ -37,9 +37,9 @@ predict.astroBayesModel <- function(age_model, new_positions) {
     # randomize the positions
     predict_store[i, ] <- runif(n = nrow(new_positions),
                                 min = new_positions$position -
-                                  new_positions$thickness/2,
+                                  new_positions$thickness / 2,
                                 max = new_positions$position +
-                                  new_positions$thickness/2) %>%
+                                  new_positions$thickness / 2) %>%
       f()
   }
   # organize storage ----------------------------------------------------------
@@ -47,8 +47,11 @@ predict.astroBayesModel <- function(age_model, new_positions) {
     as.data.frame() %>%
     rlang::set_names(nm = new_positions$id)
 
+  posterior_sample <- posterior_sample %>%
+    slice(age_model$burn:age_model$iterations)
+
   # calculate credible interval -----------------------------------------------
-  credible_interval <- apply(X = posterior_sample[age_model$burn:age_model$iterations, ],
+  credible_interval <- apply(X = posterior_sample,
                              MARGIN = 2,
                              FUN = quantile,
                              prob = c(0.025, 0.5, 0.975),

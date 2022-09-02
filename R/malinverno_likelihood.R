@@ -11,6 +11,7 @@
 malinverno_likelihood <- function(cyclostrat_data,
                                   sed_rate,
                                   tuning_frequency) {
+
   # calculate probability distribution and make interpolation function
   f <- cyclostrat_data %>%
     periodogram(output = 1,

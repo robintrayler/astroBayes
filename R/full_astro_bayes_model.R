@@ -461,6 +461,6 @@ full_astro_bayes_model <- function(geochron_data,
   return(output)
 }
 
-# pdf()
-plot(output, type = 'sed_rate')
-# dev.off()
+# # pdf()
+# plot(output, type = 'sed_rate')
+# # dev.off()

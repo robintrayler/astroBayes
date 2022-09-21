@@ -1,7 +1,7 @@
 #' helper function to visualize the likeihood functions given a model segementaiton scheme
 
 #'
-#' @name vizualize_likelihood
+#' @name visualize_likelihood
 #'
 #' @import "tidyverse"
 #' @import "dplyr"
@@ -11,7 +11,7 @@
 #' @md
 #' @export
 #'
-vizualize_likelihood <- function(sed_prior_range = c(0.1, 100),
+visualize_likelihood <- function(sed_prior_range = c(0.1, 100),
                                  segment_edges,
                                  cyclostrat_data,
                                  tuning_frequency,
@@ -76,7 +76,7 @@ vizualize_likelihood <- function(sed_prior_range = c(0.1, 100),
     theme_bw() +
     theme(axis.text.y = element_blank(),
           legend.position = 'none')  +
-    xlab('') +
+    xlab('sedimentation rate (m/Ma)') +
     ggtitle(paste(method, 'likelihood'))
 
 }

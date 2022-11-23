@@ -10,7 +10,6 @@ astro_bayes_model(
   cyclostrat_data,
   tuning_frequency,
   segment_edges,
-  sed_prior_range = c(0, 100),
   iterations = 10000,
   burn = 5000,
   method = NA
@@ -43,10 +42,6 @@ Multiple rows with the same name are allowed.
 }}
 
 \item{segment_edges}{stratigraphic points where sedimentation rate changes can  occur. Must be in the same stratigraphic scheme as geochron_data and cyclostrat_data.}
-
-\item{sed_prior_range}{vector of 2 sedimentation rates that define the minimum
-and maximum allowable sedimentation rates. These two rates define a uniform
-prior distribution for sedimentation rate.}
 
 \item{iterations}{how many Markov Chain Monte Carlo iterations should the model run for}
 

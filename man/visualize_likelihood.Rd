@@ -5,7 +5,6 @@
 \title{helper function to visualize the likeihood functions given a model segementaiton scheme}
 \usage{
 visualize_likelihood(
-  sed_prior_range = c(0.1, 100),
   segment_edges,
   cyclostrat_data,
   tuning_frequency,

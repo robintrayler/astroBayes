@@ -20,11 +20,12 @@ pgram_likelihood <- function(sed_rate,
     f <- cyclostrat %>%
       filter(position > segment_edges[i] &
                position < segment_edges[i + 1]) %>%
-      periodogram(output = 1,
+      astrochron::periodogram(output = 1,
                   verbose = FALSE,
                   genplot = FALSE,
                   background = 1,
-                  f0 = TRUE) %>%
+                  f0 = TRUE,
+                  padfac = 10) %>%
       mutate(probability = (Power / AR1_Fit),
              probability = (probability / sum(probability)),
              time_freq   = Frequency * sed_rate[i]) %>%

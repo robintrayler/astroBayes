@@ -25,10 +25,6 @@
 #'
 #' @param segment_edges stratigraphic points where sedimentation rate changes can  occur. Must be in the same stratigraphic scheme as geochron_data and cyclostrat_data.
 #'
-#' @param sed_prior_range vector of 2 sedimentation rates that define the minimum
-#' and maximum allowable sedimentation rates. These two rates define a uniform
-#' prior distribution for sedimentation rate.
-#'
 #' @param iterations how many Markov Chain Monte Carlo iterations should the model run for
 #'
 #' @param burn how many initial iterations to toss when calculating credible intervals
@@ -66,11 +62,19 @@ astro_bayes_model <- function(geochron_data,
                               cyclostrat_data,
                               tuning_frequency,
                               segment_edges,
-                              sed_prior_range = c(0, 100),
                               iterations = 10000,
                               burn = 5000,
                               method = NA) {
   # error checking ------------------------------------------------------------
+  # check to see if multiple cyclostratigrapic records are in use
+  message('initial error checking...')
+  if(class(cyclostrat_data) == 'data.frame') {
+    cycle_list <- list()
+    cycle_list[[1]] <- cyclostrat_data
+    cyclostrat_data <- cycle_list
+    rm(cycle_list)
+  }
+
   # geochron data
   if(!all(c('id', 'age', 'age_sd', 'position', 'thickness') %in%
           names(geochron_data))
@@ -78,14 +82,14 @@ astro_bayes_model <- function(geochron_data,
           Column names must be exactly: "id", "age", "age_sd", "position", "thickness"')}
 
   # segment edges
-  if(!all(c('position', 'thickness', 'hiatus_boundary') %in% names(segment_edges))
+  if(!all(c('position', 'thickness', 'hiatus_boundary', 'sed_min', 'sed_max') %in% names(segment_edges))
   ) {stop('segment_edges columns are named incorrectly. \n
-          Column names must be exactly: "position", "thickness", "hiatus_boundary"')}
+          Column names must be exactly: "position", "thickness", "hiatus_boundary", "sed_min", "sed_max"')}
 
   # cyclostrat data
-  if(!all(names(cyclostrat_data) %in% c('position', 'value'))
-  ) {stop('cyclostrat_data columns are named incorrectly. \n
-          Column names must be exactly: "position", "value"')}
+  # if(!all(names(cyclostrat_data) %in% c('position', 'value'))
+  # ) {stop('cyclostrat_data columns are named incorrectly. \n
+  #         Column names must be exactly: "position", "value"')}
 
   # tuning frequency
   if(!all(c('frequency', 'orbital_cycle') %in% names(tuning_frequency))
@@ -104,7 +108,7 @@ astro_bayes_model <- function(geochron_data,
   }
 
   # cyclostrat data
-  if(!(nrow(cyclostrat_data) > 0)) {
+  if(!any(unlist(lapply(cyclostrat_data, nrow)) > 0)) {
     stop('cyclostrat_data has 0 rows.')
   }
 
@@ -114,18 +118,23 @@ astro_bayes_model <- function(geochron_data,
   }
 
   # use malinverno probability if not specified
-  if(is.na(method)) {method = 'malinverno'}
-
-
-  # check to see if multiple cyclostratigrapic records are in use
-  # if(!is.list(cyclostrat_data)) {
-  #   cyclostrat_data <- list(cyclostrat_data)
-  # }
+  if(is.na(method)) {
+    method = 'malinverno'
+    message('no method specified, defaulting to "malinverno" spectral power method.')
+  }
 
   # check to make sure things are in order ------------------------------------
-  geochron_data   <- geochron_data   %>% arrange(position)
-  cyclostrat_data <- cyclostrat_data %>% arrange(position)
+  geochron_data   <- geochron_data %>% arrange(position)
 
+  ####FIX THIS FOR LISTS####
+  # cyclostrat_data <- cyclostrat_data %>% arrange(position)
+
+  for(i in seq_along(cyclostrat_data)) {
+    cyclostrat_data[[i]] <- cyclostrat_data[[i]] %>% arrange(position)
+  }
+  rm(i)
+
+  message('finished')
   # store the input data for when positions move around later
   master_edges <- segment_edges
   master_geochron <- geochron_data
@@ -160,8 +169,15 @@ astro_bayes_model <- function(geochron_data,
   model_storage <- matrix(nrow = length(position_grid),
                           ncol = iterations)
 
-  tuned_cyclostrat <- matrix(nrow = nrow(cyclostrat_data),
-                             ncol = iterations)
+  ####FIX THIS FOR LISTS####
+  # tuned_cyclostrat <- matrix(nrow = nrow(cyclostrat_data),
+  #                            ncol = iterations)
+
+  tuned_cyclostrat <- list()
+  for(i in seq_along(cyclostrat_data)) {
+    tuned_cyclostrat[[i]] <- matrix(nrow = nrow(cyclostrat_data[[i]]),
+                                    ncol = iterations)
+  }
 
   # set initial conditions ----------------------------------------------------
   # set anchor point using a simple linear regression
@@ -170,16 +186,29 @@ astro_bayes_model <- function(geochron_data,
     predict(newdata = data.frame(position = min(position_grid))) %>%
     as.vector()
 
-  # set the starting sed_rate around the average rate
-  mean_rate <- geochron_data %>%
-    lm(position ~ age, data = .) %>%
-    coef() %>%
-    dplyr::nth(2)
+  message('Setting initial sedimentation rates to maximum likelihood... \n (this can take a few minutes)')
+  # set the starting rates to the maximum likelihood
+  starting_rate <- visualize_likelihood(segment_edges = segment_edges,
+                                         cyclostrat_data = cyclostrat_data,
+                                         tuning_frequency = tuning_frequency,
+                                         resolution = 0.1,
+                                         method = method,
+                                        plot = FALSE) |>
+    group_by(name) |>
+    filter(probability == max(probability, na.rm = TRUE)) |>
+    pull(sed_rate) |>
+    rev()
 
+  # # set the starting sed_rate around the average rate
+  # mean_rate <- geochron_data %>%
+  #   lm(position ~ age, data = .) %>%
+  #   coef() %>%
+  #   dplyr::nth(2)
+  #
   # randomly adjust starting rates
   sed_rate[1, ] <- rnorm(nrow(segment_edges) - 1,
-                         mean = mean_rate,
-                         sd = 0.1)
+                         mean = starting_rate,
+                         sd = 0.05)
 
   # anchor the initial model in time ------------------------------------------
   model_storage[, 1] <- anchor_sed_model(segment_edges = segment_edges,
@@ -195,6 +224,7 @@ astro_bayes_model <- function(geochron_data,
   )
 
   # run the MCMC model --------------------------------------------------------
+  message('Staring the MCMC model...')
   pb <- progress::progress_bar$new(total = iterations,
                                    format = '[:bar] :percent eta: :eta')
 
@@ -235,43 +265,31 @@ astro_bayes_model <- function(geochron_data,
                                        i = j,
                                        start_index = burn / 2,
                                        initial_Cd = 0.01,
-                                       lower = sed_prior_range[1],
-                                       upper = sed_prior_range[2])
+                                       lower = segment_edges$sed_min[q],
+                                       upper = segment_edges$sed_max[q])
 
       # calculate the probability ---------------------------------------------
-      # proposed_prob <- vector()
-      # for(i in seq_along(cyclostrat_data)) {
-      #   proposed_prob[i] <- calculate_likelihood(sed_rate = proposed_rate,
-      #                                            segment_edges = segment_edges$position[q:(q + 1)],
-      #                                            cyclostrat = cyclostrat_data[[i]],
-      #                                            tuning_frequency = tuning_frequency,
-      #                                            method = method)
-      #
-      # }
-      # proposed_prob <- sum(proposed_prob)
-      #
-      # current_prob <- vector()
-      # for(i in seq_along(cyclostrat_data)) {
-      #   current_prob[i] <- calculate_likelihood(sed_rate = sed_rate[j - 1, q],
-      #                                            segment_edges = segment_edges$position[q:(q + 1)],
-      #                                            cyclostrat = cyclostrat_data[[i]],
-      #                                            tuning_frequency = tuning_frequency,
-      #                                            method = method)
-      #
-      # }
-      # current_prob <- sum(current_prob)
+      proposed_prob <- vector()
+      for(i in seq_along(cyclostrat_data)) {
+        proposed_prob[i] <- calculate_likelihood(sed_rate = proposed_rate,
+                                                 segment_edges = segment_edges$position[q:(q + 1)],
+                                                 cyclostrat = cyclostrat_data[[i]],
+                                                 tuning_frequency = tuning_frequency,
+                                                 method = method)
 
-      proposed_prob <- calculate_likelihood(cyclostrat_data = cyclostrat_data,
-                                            tuning_frequency = tuning_frequency,
-                                            sed_rate = proposed_rate,
-                                            segment_edges = segment_edges$position[q:(q + 1)],
-                                            method = method)
+      }
+      proposed_prob <- sum(proposed_prob)
 
-      current_prob <- calculate_likelihood(cyclostrat_data = cyclostrat_data,
-                                           tuning_frequency = tuning_frequency,
-                                           sed_rate = sed_rate[j - 1, q],
-                                           segment_edges = segment_edges$position[q:(q + 1)],
-                                           method = method)
+      current_prob <- vector()
+      for(i in seq_along(cyclostrat_data)) {
+        current_prob[i] <- calculate_likelihood(sed_rate = sed_rate[j - 1, q],
+                                                segment_edges = segment_edges$position[q:(q + 1)],
+                                                cyclostrat = cyclostrat_data[[i]],
+                                                tuning_frequency = tuning_frequency,
+                                                method = method)
+
+      }
+      current_prob <- sum(current_prob)
 
       # calculate the radioisotopic probability -------------------------------
       current_rates[q] <- proposed_rate
@@ -439,7 +457,13 @@ astro_bayes_model <- function(geochron_data,
     f <- approxfun(x = position_grid,
                    y = model_storage[, j])
 
-    tuned_cyclostrat[, j] <- f(cyclostrat_data$position)
+    ####FIX THIS FOR LISTS####
+
+    for(i in seq_along(cyclostrat_data)) {
+      tuned_cyclostrat[[i]][, j] <- f(cyclostrat_data[[i]]$position)
+    }
+    # tuned_cyclostrat[, j] <- f(cyclostrat_data$position)
+
   } # end of the main loop ####################################################
 
   # clean up the results and organize for output ------------------------------
@@ -456,37 +480,55 @@ astro_bayes_model <- function(geochron_data,
   names(CI) <- c('CI_2.5', 'median', 'CI_97.5')
   CI <- CI %>% add_column(position = position_grid)
 
+  ####FIX THIS FOR LISTS####
   # calculate the credible interval for the cyclostratigraphy
-  cyclostrat_CI <- apply(X = tuned_cyclostrat[, burn:iterations],
-                         MARGIN = 1,
-                         FUN = quantile,
-                         prob = c(0.025, 0.5, 0.975),
-                         na.rm = TRUE) %>%
-    t() %>%
-    data.frame()
+  cyclostrat_CI <- list()
+  for(i in seq_along(cyclostrat_data)) {
+    CI_temp <- apply(X = tuned_cyclostrat[[i]][,burn:iterations],
+                     MARGIN = 1,
+                     FUN = quantile,
+                     prob = c(0.025, 0.5, 0.975),
+                     na.rm = TRUE)  %>%
+      t() %>%
+      as.data.frame()
+    names(CI_temp) <- c('CI_2.5', 'median', 'CI_97.5')
 
-  # make it ggplot friendly
-  names(cyclostrat_CI) <- c('CI_2.5', 'median', 'CI_97.5')
-  cyclostrat_CI <- cyclostrat_CI %>%
-    add_column(value = cyclostrat_data$value)
+    cyclostrat_CI[[i]] <- CI_temp %>%
+      add_column(value = cyclostrat_data[[i]]$value)
+
+  }
+
+  #
+  # cyclostrat_CI <- apply(X = tuned_cyclostrat[, burn:iterations],
+  #                        MARGIN = 1,
+  #                        FUN = quantile,
+  #                        prob = c(0.025, 0.5, 0.975),
+  #                        na.rm = TRUE) %>%
+  #   t() %>%
+  #   data.frame()
+  #
+  # # make it ggplot friendly
+  # ####FIX THIS FOR LISTS####
+  # names(cyclostrat_CI) <- c('CI_2.5', 'median', 'CI_97.5')
+  # cyclostrat_CI <- cyclostrat_CI %>%
+  #   add_column(value = cyclostrat_data$value)
 
   # gather the inputs and outputs into a list
-  output = list(CI = CI, # credible interval
-                cyclostrat_CI = cyclostrat_CI, # credible interval for cyclostrat data
-                anchor_point = anchor_point, # anchor point age
-                iterations = iterations, # number of iterations
-                burn = burn, # burn-in
-                model_iterations = model_storage, # individual age models
-                sed_rate = sed_rate, # sedimentation rate chains
-                segment_edges = master_edges, # segment_edges input
-                geochron_data = master_geochron, # geochron input
-                cyclostrat_data = cyclostrat_data, # cyclostrat_data input
-                sed_prior_range = sed_prior_range, # sed prior input
+  output = list(CI = CI,                             # credible interval
+                cyclostrat_CI = cyclostrat_CI,       # credible interval for cyclostrat data
+                anchor_point = anchor_point,         # anchor point age
+                iterations = iterations,             # number of iterations
+                burn = burn,                         # burn-in
+                model_iterations = model_storage,    # individual age models
+                sed_rate = sed_rate,                 # sedimentation rate chains
+                segment_edges = master_edges,        # segment_edges input
+                geochron_data = master_geochron,     # geochron input
+                cyclostrat_data = cyclostrat_data,   # cyclostrat_data input
                 tuning_frequency = tuning_frequency, # tuning frequencies input
-                hiatus_durations = hiatus_storage) # hiatus duration
+                hiatus_durations = hiatus_storage)   # hiatus duration
 
   # assign a class and return
   class(output) <- "astroBayesModel"
-  beepr::beep(4)
+  # beepr::beep(4)
   return(output)
 }

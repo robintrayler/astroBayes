@@ -145,59 +145,166 @@ plot_trace <- function(age_model) {
 
 ###############################################################################
 plot_pgram <- function(age_model) {
-  plots <- list()
-  colors <- viridis(n = ncol(age_model$sed_rate), option = 'D', end = 0.9)
-  for(k in 1:ncol(age_model$sed_rate)) {
-    pgram <- age_model$cyclostrat_data %>%
-      filter(position > age_model$segment_edges$position[k] &
-               position < age_model$segment_edges$position[k + 1]) %>%
-      periodogram(output = 1,
-                  verbose = FALSE,
-                  genplot = FALSE,
-                  background = 1,
-                  f0 = TRUE) %>%
-      mutate(probability = (Power / AR1_Fit),
-             probability = probability / sum(probability),
-             time_freq   = Frequency * quantile(age_model$sed_rate[age_model$burn:age_model$iterations, k],
-                                                prob = 0.5,
-                                                na.rm = TRUE))
 
-    plots[[k]] <- pgram %>%
-      ggplot(mapping = aes(x = time_freq,
-                           y = probability)) +
-      geom_line(color = colors[k]) +
+  # preallocate a list to store plots
+  plots <- list()
+
+  # preallocate colors for different segments
+  colors <- viridis(n = length(age_model$cyclostrat_data),
+                    option = 'plasma',
+                    end = 0.75)
+
+
+  for(i in  seq_along(age_model$cyclostrat_data)) {
+    plots[[i]] <- age_model$cyclostrat_CI[[i]] |>
+      select(median,
+             value) |>
+      linterp(genplot = FALSE,
+              verbose = FALSE) |>
+      periodogram(genplot = FALSE,
+                  verbose = FALSE,
+                  background = 1,
+                  f0 = TRUE,
+                  output = 1,
+                  padfac = 10) |>
+      ggplot(mapping = aes(x = Frequency,
+                           y = Power)) +
+      geom_line(color = colors[i]) +
+      geom_line(mapping = aes(y = AR1_Fit),
+                color = 2,
+                linetype = 'solid') +
+      geom_line(mapping = aes(y = AR1_95_power),
+                color = 2,
+                linetype = 'dashed') +
+      theme_bw() +
       geom_vline(data = age_model$tuning_frequency,
                  mapping = aes(xintercept = frequency),
+                 color = 'grey',
                  linetype = 'dashed',
-                 color = 'red') +
-      ggtitle(label = paste(age_model$segment_edges$position[k],
-                            '-',
-                            age_model$segment_edges$position[k + 1],
-                            'meters \n',
-                            'median sed rate = \n',
-                            round(quantile(age_model$sed_rate[age_model$burn:age_model$iterations, k],
-                                           na.rm = TRUE,
-                                           prob = 0.5),
-                                  2),
-                            'm/Ma')) +
-      theme_bw() +
-      theme(legend.position = 'none',
-            axis.text.y = element_blank()) +
-      xlab('frequency (cycles/Ma)') +
-      theme(legend.position = 'none')
+                 size = 0.5) +
+      xlab('Frequency (cycles/Ma)') +
+      ylab('Spectral Power') +
+      ggtitle(LETTERS[i]) +
+      theme(panel.grid = element_blank())
   }
-  cowplot::plot_grid(plotlist = cowplot::align_plots(plotlist = plots))
+
+  cowplot::plot_grid(plotlist = cowplot::align_plots(plotlist = plots),
+                     ncol = 1)
+
 }
 
 ###############################################################################
 cyclostrat_plot <- function(age_model) {
+
+  # assign identifier letters
+  for(i in seq_along(age_model$cyclostrat_CI)) {
+    age_model$cyclostrat_CI[[i]] <-
+      age_model$cyclostrat_CI[[i]] %>%
+      add_column(id = LETTERS[i])
+  }
+
+  # make the plot
   p <- age_model$cyclostrat_CI %>%
+    reduce(rbind) %>%
     ggplot(mapping = aes(x = median,
-                         y = value)) +
-    geom_path() +
-    geom_point(size = 0.25) +
+                         y = value,
+                         color = id)) +
+    geom_line(size = 0.25) +
+    geom_point(size = 0.5) +
+    facet_grid(id~.) +
     theme_bw() +
-    xlab('age (Ma)') +
-    ylab('Value')
+    xlab('Age (Ma)') +
+    theme(legend.position = 'none') +
+    scale_color_viridis(option = 'plasma',
+                        discrete = TRUE,
+                        end = 0.75)
   return(p)
 }
+
+
+
+# for(i in seq_along(age_model$cyclostrat_data)) {
+#   age_model$cyclostrat_data[[i]] <-
+#     age_model$cyclostrat_data[[i]] %>%
+#     add_column(id = LETTERS[i])
+# }
+#
+# pgram_list <- list()
+# for(j in seq_along(age_model$cyclostrat_data)) {
+#   age_model$cyclostrat_data[[j]] %>%
+#     filter(position > )
+# }
+#
+# for(k in ncol(age_model$sed_rate)) {
+#   age_model$cyclostrat_data[[1]] %>%
+#     filter(position > age_model$segment_edges$position[k] &
+#              position < age_model$segment_edges$position[k + 1]) %>%
+#     astrochron::periodogram(output = 1,
+#                             verbose = FALSE,
+#                             genplot = FALSE,
+#                             background = 1,
+#                             f0 = TRUE,
+#                             padfac = 100) %>%
+#     ggplot(mapping = aes(x = Frequency,
+#                          y = Power)) +
+#     geom_line() +
+#     geom_line(mapping = aes(y = AR1_Fit),
+#               color = 2,
+#               linetype = 'dashed') +
+#     ggtitle(label = paste(age_model$segment_edges$position[k],
+#                           '-',
+#                           age_model$segment_edges$position[k + 1],
+#                           'meters',
+#                           'median sed rate =',
+#                           round(quantile(age_model$sed_rate[age_model$burn:age_model$iterations, k],
+#                                          na.rm = TRUE,
+#                                          prob = 0.5),
+#                                 2),
+#                           'm/Ma')) +
+#     theme(axis.text.y = element_blank()) +
+#     geom_vline(data = age_model$tuning_frequency,
+#                  mapping = aes(xintercept = frequency))
+# }
+#
+#
+#
+# for(k in 1:ncol(age_model$sed_rate)) {
+#   pgram <- age_model$cyclostrat_data %>%
+#     filter(position > age_model$segment_edges$position[k] &
+#              position < age_model$segment_edges$position[k + 1]) %>%
+#     periodogram(output = 1,
+#                 verbose = FALSE,
+#                 genplot = FALSE,
+#                 background = 1,
+#                 f0 = TRUE) %>%
+#     mutate(probability = (Power / AR1_Fit),
+#            probability = probability / sum(probability),
+#            time_freq   = Frequency * quantile(age_model$sed_rate[age_model$burn:age_model$iterations, k],
+#                                               prob = 0.5,
+#                                               na.rm = TRUE))
+#
+#   plots[[k]] <- pgram %>%
+#     ggplot(mapping = aes(x = time_freq,
+#                          y = probability)) +
+#     geom_line(color = colors[k]) +
+#     geom_vline(data = age_model$tuning_frequency,
+#                mapping = aes(xintercept = frequency),
+#                linetype = 'dashed',
+#                color = 'red') +
+#     ggtitle(label = paste(age_model$segment_edges$position[k],
+#                           '-',
+#                           age_model$segment_edges$position[k + 1],
+#                           'meters \n',
+#                           'median sed rate = \n',
+#                           round(quantile(age_model$sed_rate[age_model$burn:age_model$iterations, k],
+#                                          na.rm = TRUE,
+#                                          prob = 0.5),
+#                                 2),
+#                           'm/Ma')) +
+#     theme_bw() +
+#     theme(legend.position = 'none',
+#           axis.text.y = element_blank()) +
+#     xlab('frequency (cycles/Ma)') +
+#     theme(legend.position = 'none')
+# }
+# cowplot::plot_grid(plotlist = cowplot::align_plots(plotlist = plots))

@@ -188,7 +188,7 @@ astro_bayes_model <- function(geochron_data,
 
   message('Setting initial sedimentation rates to maximum likelihood... \n (this can take a few minutes)')
   # set the starting rates to the maximum likelihood
-  starting_rate <- visualize_likelihood(segment_edges = segment_edges,
+  sed_rate[1, ] <- visualize_likelihood(segment_edges = segment_edges,
                                          cyclostrat_data = cyclostrat_data,
                                          tuning_frequency = tuning_frequency,
                                          resolution = 0.1,
@@ -205,10 +205,10 @@ astro_bayes_model <- function(geochron_data,
   #   coef() %>%
   #   dplyr::nth(2)
   #
-  # randomly adjust starting rates
-  sed_rate[1, ] <- rnorm(nrow(segment_edges) - 1,
-                         mean = starting_rate,
-                         sd = 0.05)
+  # # randomly adjust starting rates
+  # sed_rate[1, ] <- rnorm(nrow(segment_edges) - 1,
+  #                        mean = starting_rate,
+  #                        sd = 0.05)
 
   # anchor the initial model in time ------------------------------------------
   model_storage[, 1] <- anchor_sed_model(segment_edges = segment_edges,

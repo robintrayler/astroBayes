@@ -18,6 +18,14 @@ visualize_likelihood <- function(segment_edges,
                                  method = 'malinverno',
                                  plot = TRUE) {
 
+  # make sure cyclostrat_data is a list
+  if(class(cyclostrat_data) == 'data.frame') {
+    cycle_list <- list()
+    cycle_list[[1]] <- cyclostrat_data
+    cyclostrat_data <- cycle_list
+    rm(cycle_list)
+  }
+
   # calculate the number of segments
   n_segments     <- nrow(segment_edges) - 1
 

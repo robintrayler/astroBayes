@@ -169,10 +169,6 @@ astro_bayes_model <- function(geochron_data,
   model_storage <- matrix(nrow = length(position_grid),
                           ncol = iterations)
 
-  ####FIX THIS FOR LISTS####
-  # tuned_cyclostrat <- matrix(nrow = nrow(cyclostrat_data),
-  #                            ncol = iterations)
-
   tuned_cyclostrat <- list()
   for(i in seq_along(cyclostrat_data)) {
     tuned_cyclostrat[[i]] <- matrix(nrow = nrow(cyclostrat_data[[i]]),
@@ -198,17 +194,6 @@ astro_bayes_model <- function(geochron_data,
     filter(probability == max(probability, na.rm = TRUE)) |>
     pull(sed_rate) |>
     rev()
-
-  # # set the starting sed_rate around the average rate
-  # mean_rate <- geochron_data %>%
-  #   lm(position ~ age, data = .) %>%
-  #   coef() %>%
-  #   dplyr::nth(2)
-  #
-  # # randomly adjust starting rates
-  # sed_rate[1, ] <- rnorm(nrow(segment_edges) - 1,
-  #                        mean = starting_rate,
-  #                        sd = 0.05)
 
   # anchor the initial model in time ------------------------------------------
   model_storage[, 1] <- anchor_sed_model(segment_edges = segment_edges,

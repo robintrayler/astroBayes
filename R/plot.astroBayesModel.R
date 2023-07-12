@@ -183,6 +183,7 @@ plot_pgram <- function(age_model) {
                  linetype = 'dashed',
                  size = 0.5) +
       xlab('Frequency (cycles/Ma)') +
+      xlim(0, max(age_model$tuning_frequency$frequency))
       ylab('Spectral Power') +
       ggtitle(LETTERS[i]) +
       theme(panel.grid = element_blank())
@@ -220,91 +221,3 @@ cyclostrat_plot <- function(age_model) {
                         end = 0.75)
   return(p)
 }
-
-
-
-# for(i in seq_along(age_model$cyclostrat_data)) {
-#   age_model$cyclostrat_data[[i]] <-
-#     age_model$cyclostrat_data[[i]] %>%
-#     add_column(id = LETTERS[i])
-# }
-#
-# pgram_list <- list()
-# for(j in seq_along(age_model$cyclostrat_data)) {
-#   age_model$cyclostrat_data[[j]] %>%
-#     filter(position > )
-# }
-#
-# for(k in ncol(age_model$sed_rate)) {
-#   age_model$cyclostrat_data[[1]] %>%
-#     filter(position > age_model$segment_edges$position[k] &
-#              position < age_model$segment_edges$position[k + 1]) %>%
-#     astrochron::periodogram(output = 1,
-#                             verbose = FALSE,
-#                             genplot = FALSE,
-#                             background = 1,
-#                             f0 = TRUE,
-#                             padfac = 100) %>%
-#     ggplot(mapping = aes(x = Frequency,
-#                          y = Power)) +
-#     geom_line() +
-#     geom_line(mapping = aes(y = AR1_Fit),
-#               color = 2,
-#               linetype = 'dashed') +
-#     ggtitle(label = paste(age_model$segment_edges$position[k],
-#                           '-',
-#                           age_model$segment_edges$position[k + 1],
-#                           'meters',
-#                           'median sed rate =',
-#                           round(quantile(age_model$sed_rate[age_model$burn:age_model$iterations, k],
-#                                          na.rm = TRUE,
-#                                          prob = 0.5),
-#                                 2),
-#                           'm/Ma')) +
-#     theme(axis.text.y = element_blank()) +
-#     geom_vline(data = age_model$tuning_frequency,
-#                  mapping = aes(xintercept = frequency))
-# }
-#
-#
-#
-# for(k in 1:ncol(age_model$sed_rate)) {
-#   pgram <- age_model$cyclostrat_data %>%
-#     filter(position > age_model$segment_edges$position[k] &
-#              position < age_model$segment_edges$position[k + 1]) %>%
-#     periodogram(output = 1,
-#                 verbose = FALSE,
-#                 genplot = FALSE,
-#                 background = 1,
-#                 f0 = TRUE) %>%
-#     mutate(probability = (Power / AR1_Fit),
-#            probability = probability / sum(probability),
-#            time_freq   = Frequency * quantile(age_model$sed_rate[age_model$burn:age_model$iterations, k],
-#                                               prob = 0.5,
-#                                               na.rm = TRUE))
-#
-#   plots[[k]] <- pgram %>%
-#     ggplot(mapping = aes(x = time_freq,
-#                          y = probability)) +
-#     geom_line(color = colors[k]) +
-#     geom_vline(data = age_model$tuning_frequency,
-#                mapping = aes(xintercept = frequency),
-#                linetype = 'dashed',
-#                color = 'red') +
-#     ggtitle(label = paste(age_model$segment_edges$position[k],
-#                           '-',
-#                           age_model$segment_edges$position[k + 1],
-#                           'meters \n',
-#                           'median sed rate = \n',
-#                           round(quantile(age_model$sed_rate[age_model$burn:age_model$iterations, k],
-#                                          na.rm = TRUE,
-#                                          prob = 0.5),
-#                                 2),
-#                           'm/Ma')) +
-#     theme_bw() +
-#     theme(legend.position = 'none',
-#           axis.text.y = element_blank()) +
-#     xlab('frequency (cycles/Ma)') +
-#     theme(legend.position = 'none')
-# }
-# cowplot::plot_grid(plotlist = cowplot::align_plots(plotlist = plots))

@@ -185,12 +185,12 @@ plot_pgram <- function(age_model) {
       xlab('Frequency (cycles/Ma)') +
       xlim(0, max(age_model$tuning_frequency$frequency))
       ylab('Spectral Power') +
-      ggtitle(LETTERS[i]) +
       theme(panel.grid = element_blank())
   }
 
   cowplot::plot_grid(plotlist = cowplot::align_plots(plotlist = plots),
-                     ncol = 1)
+                     ncol = 1,
+                     labels = 'A')
 
 }
 

@@ -99,6 +99,6 @@ You can plot the predictions using `plot()`.
 ```
 plot(predictions)
 ```
-
+![](./figures/predictions.jpeg)
 
 

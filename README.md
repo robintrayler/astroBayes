@@ -54,3 +54,17 @@ The `age_depth` plot shows the age-depth model as a median (black line) and 95% 
 plot(age_model, type = 'age_depth')
 ```
 ![](./figures/age_depth.jpeg)
+
+You can also inspect the posterior distribution of sedimentation rate, either as  kernel density estimate: 
+
+```
+plot(age_model, type = 'sed_rate')
+```
+![](./figures/sed_rate.jpeg)
+
+or as trace plots: 
+
+```
+plot(age_model, type = 'trace')
+```
+![](./figures/trace.jpeg)

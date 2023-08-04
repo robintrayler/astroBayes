@@ -28,7 +28,7 @@ First load astroBayes and any other packages you want to use.
 library(astroBayes)        # for modeling
 ```
 
-`astroBayes` includes a simple data set consisting of a set of radioisotopic dates, a cyclostratigraphic record, a set of target frequencies, and a set of layer boundaries. The example data can be loaded using the `data()` function. 
+`astroBayes` includes a simple data set consisting of a set of radioisotopic dates, a cyclostratigraphic record, a set of target frequencies, and a set of layer boundaries. The example data can be loaded using the `data()` function. For details on the mechanics of the `astroBayes` model and how `layer_boundaries` are selected see the manuscript linked above. 
 
 ```
 data("target_frequencies")
@@ -37,7 +37,9 @@ data("cyclostratigraphic_data")
 data("layer_boundaries")
 ```
 
-The primary function in `astroBayes` is `astro_bayes_model()`. This function function uses a Metropolis-Hastings Markov Chain Monte Carlo algorithm to fit an age-depth model to the data by finding the most probable sedimentation rates for each model layer. Running the model will take a few minutes to several hours depending on the number of `iterations` and the complexity of the data (number of `dates`,  and number of layers). A progress bar should pop up in the `R` terminal with a rough estimate of time remaining.
+The primary function in `astroBayes` is `astro_bayes_model()`. This function uses a Metropolis-Hastings Markov Chain Monte Carlo algorithm to fit an age-depth model to the data by finding the most probable sedimentation rate for each model layer. 
+
+Running the model will take a few minutes to several hours depending on the number of `iterations` and the complexity of the data (number of `dates`, number of data points in the cyclostratigraphic data, and the number of layers). A progress bar should pop up in the `R` terminal with a rough estimate of time remaining. The model below takes about 25 minutes to run on a 2022 MacBook Pro with an M1 Pro processor and 32 Gb of ram.
 
 ```
 age_model <- astro_bayes_model(geochron_data = dates,
@@ -48,11 +50,10 @@ age_model <- astro_bayes_model(geochron_data = dates,
                                burn = 1000)
 ```
 
-
 ### Plotting 
 After the model has finished running you can visualize the results. 
 
-The `age_depth` plot shows the age-depth model as a median (black line) and 95% credible interval (shaded grey region). The dates are shown as colored normal distribution. 
+The `age_depth` plot shows the age-depth model as a median (black line) and 95% credible interval (shaded grey region). The dates are shown as colored normal distribution.
 
 ```
 plot(age_model, type = 'age_depth')
@@ -80,10 +81,10 @@ plot(age_model, type = 'periodogram')
 
 ### Predictions
 
-astroBayes can predict the age of any stratigraphic point within the bounds of the age-depth model. Predictions us the `predict()` function. Positions to predict should be stored in a data frame with three columns: `position`, `thickness`, and `id`. 
+astroBayes can predict the age of stratigraphic points within the bounds of the age-depth model. Predictions us the `predict()` function. Positions to predict should be stored in a data frame with three columns: `position`, `thickness`, and `id`. 
 
 ```
-# define some positons to predict. 
+# define some positions to predict 
 new_positions <- data.frame(position = c(5, 10, 15), 
                             thickness = c(1, 0, 1), 
                             id = c('x', 'y', 'z'))

@@ -71,7 +71,7 @@ plot(age_model, type = 'trace')
 ```
 ![](./figures/trace.jpeg)
 
-You can also check for quality of the model fit by comparing a periodogram of the data with the age model applied.
+You can also check for quality of the model fit by comparing a periodogram of the data with the age model applied. The target frequencies uses are shown as vertical dashed lines. 
 
 ```
 plot(age_model, type = 'periodogram')

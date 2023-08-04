@@ -16,33 +16,42 @@
 #' * position: stratigraphic position in depth coordinates (i.e. the top is 0).
 #' * value: the measurement value of the proxy record.
 #'
-#' @param tuning_frequency data frame of tuning frequencies to use. Currently frequencies must be in cycles / Ma (i.e., long eccentricity ~ 1 / 0.405).
-#' column headers *must* be named exactly as follows:
+#' @param tuning_frequency data frame of target frequencies to use. Currently frequencies must be in cycles / Ma (i.e., long eccentricity ~ 1 / 0.405).
+#' The column headers *must* be named exactly as follows:
 #'
-#' * frequency: the tuning frequency or frequencies to use
+#'  * frequency: the target frequency or frequencies to use
 #'  * orbital_cycle: character string name of each orbital cycle.
 #'   Multiple rows with the same name are allowed.
 #'
-#' @param segment_edges stratigraphic points where sedimentation rate changes can  occur. Must be in the same stratigraphic scheme as geochron_data and cyclostrat_data.
+#' @param segment_edges A data frame specifying where sedimentation rate changes can occur. Must be in the same stratigraphic scheme as geochron_data and cyclostrat_data. The column headers *must* be named exactly as follows
+#'  * position: Stratigraphic position in depth coordinates (i.e. the top is 0). Note that the top and bottom of the section must be specified.
+#'  * thickness: Uniform uncertainty of `position`.
+#'  * hiatus_boundary: `TRUE` or `FALSE`. Should the layer boundary be treated as a hiatus?
+#'  * sed_min: minimum sedimentation rate boundary for the layer.
+#'  * sed_max: minimum sedimentation rate boundary for the layer.
+#'       * Note: While `sed_min` and `sed_max` are specified in the same rows as the layer boundaries, they are applied to the layer between *their own* row and the row below.
 #'
-#' @param iterations how many Markov Chain Monte Carlo iterations should the model run for
+#' @param iterations How many Markov Chain Monte Carlo iterations should the model run for
 #'
-#' @param burn how many initial iterations to toss when calculating credible intervals
+#' @param burn How many initial iterations to toss when calculating credible intervals
+#'
+#' @param method Probability calculation method. Currently only `malinverno` is supported.
 #'
 #' @import "tidyverse"
+#' @import "tidyr"
 #' @import "dplyr"
 #' @import "astrochron"
 #' @import "tibble"
 #' @importFrom magrittr "%>%"
-#' @import "beepr"
 #'
 #' @return The function returns a list of class `astroBayesModel`
 #' which contains the following objects:
-#'  `CI` data frame containing the credible interval for the age model
-#'  `anchor_point` a data.frame containing the posterior sample for the anchor_point
+#'  * `CI` data frame containing the credible interval for the age model
+#'  * `anchor_point` a data.frame containing the posterior sample for the anchor_point
 #'    parameter(s)
+#'  * `cyclostrat_CI` data frame containg the credible interval for the cyclostratigraphic data.
 #'  * `sed_rate` a matrix containing the posterior sample of sedimentation rate
-#'  for each model segment
+#'  for each model layer.
 #'  * `model_iterations` a matrix containing the individual model iterations used
 #'  to calculate `CI`. These can be plotted against the `position` column in `CI`
 #'  to visualize.
@@ -52,8 +61,8 @@
 #'  * `segment_edges`
 #'  * `geochron_data`
 #'  * `cyclostrat_data`
-#'  * `sed_prior_range`
 #'  * `tuning_frequency`
+#'  * `hiatus_durations`
 #'
 #' @md
 #' @export
@@ -64,7 +73,7 @@ astro_bayes_model <- function(geochron_data,
                               segment_edges,
                               iterations = 10000,
                               burn = 5000,
-                              method = NA) {
+                              method = 'malinverno') {
   # error checking ------------------------------------------------------------
   # check to see if multiple cyclostratigrapic records are in use
   message('initial error checking...')
@@ -126,9 +135,6 @@ astro_bayes_model <- function(geochron_data,
   # check to make sure things are in order ------------------------------------
   geochron_data   <- geochron_data %>% arrange(position)
 
-  ####FIX THIS FOR LISTS####
-  # cyclostrat_data <- cyclostrat_data %>% arrange(position)
-
   for(i in seq_along(cyclostrat_data)) {
     cyclostrat_data[[i]] <- cyclostrat_data[[i]] %>% arrange(position)
   }
@@ -138,6 +144,7 @@ astro_bayes_model <- function(geochron_data,
   # store the input data for when positions move around later
   master_edges <- segment_edges
   master_geochron <- geochron_data
+
   # define interpolation grid -------------------------------------------------
   position_grid <- seq(from = min(segment_edges$position),
                        to   = max(segment_edges$position),
@@ -152,6 +159,7 @@ astro_bayes_model <- function(geochron_data,
                             ncol = nrow(segment_edges))
 
   segment_storage[1, ] <- segment_edges$position
+
   # store all probabilities and anchor point
   anchor_point <- vector(length = iterations)
 
@@ -233,7 +241,7 @@ astro_bayes_model <- function(geochron_data,
                                       master_edges$thickness / 2,
                                     max = master_edges$position +
                                       master_edges$thickness / 2)
-
+    segment_storage[j, ] <- segment_edges$position
     # randomly geochronology positions ----------------------------------------
     geochron_data$position = runif(nrow(master_geochron),
                                    min = master_geochron$position -
@@ -465,7 +473,6 @@ astro_bayes_model <- function(geochron_data,
   names(CI) <- c('CI_2.5', 'median', 'CI_97.5')
   CI <- CI %>% add_column(position = position_grid)
 
-  ####FIX THIS FOR LISTS####
   # calculate the credible interval for the cyclostratigraphy
   cyclostrat_CI <- list()
   for(i in seq_along(cyclostrat_data)) {
@@ -483,21 +490,6 @@ astro_bayes_model <- function(geochron_data,
 
   }
 
-  #
-  # cyclostrat_CI <- apply(X = tuned_cyclostrat[, burn:iterations],
-  #                        MARGIN = 1,
-  #                        FUN = quantile,
-  #                        prob = c(0.025, 0.5, 0.975),
-  #                        na.rm = TRUE) %>%
-  #   t() %>%
-  #   data.frame()
-  #
-  # # make it ggplot friendly
-  # ####FIX THIS FOR LISTS####
-  # names(cyclostrat_CI) <- c('CI_2.5', 'median', 'CI_97.5')
-  # cyclostrat_CI <- cyclostrat_CI %>%
-  #   add_column(value = cyclostrat_data$value)
-
   # gather the inputs and outputs into a list
   output = list(CI = CI,                             # credible interval
                 cyclostrat_CI = cyclostrat_CI,       # credible interval for cyclostrat data
@@ -507,6 +499,7 @@ astro_bayes_model <- function(geochron_data,
                 model_iterations = model_storage,    # individual age models
                 sed_rate = sed_rate,                 # sedimentation rate chains
                 segment_edges = master_edges,        # segment_edges input
+                segment_storage = segment_storage,    # layer boundary positions
                 geochron_data = master_geochron,     # geochron input
                 cyclostrat_data = cyclostrat_data,   # cyclostrat_data input
                 tuning_frequency = tuning_frequency, # tuning frequencies input
@@ -514,6 +507,5 @@ astro_bayes_model <- function(geochron_data,
 
   # assign a class and return
   class(output) <- "astroBayesModel"
-  # beepr::beep(4)
   return(output)
 }

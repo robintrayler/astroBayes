@@ -1,3 +1,5 @@
+#' @export
+#'
 gen_cycles <- function(sed_rate, target_in, n_pts, dx)
 {
   result <- matrix(0, n_pts, 2 * length(target_in))

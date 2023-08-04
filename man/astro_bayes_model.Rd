@@ -12,7 +12,7 @@ astro_bayes_model(
   segment_edges,
   iterations = 10000,
   burn = 5000,
-  method = NA
+  method = "malinverno"
 )
 }
 \arguments{
@@ -33,29 +33,42 @@ column headers \emph{must} be named exactly as follows:
 \item value: the measurement value of the proxy record.
 }}
 
-\item{tuning_frequency}{data frame of tuning frequencies to use. Currently frequencies must be in cycles / Ma (i.e., long eccentricity ~ 1 / 0.405).
-column headers \emph{must} be named exactly as follows:
+\item{tuning_frequency}{data frame of target frequencies to use. Currently frequencies must be in cycles / Ma (i.e., long eccentricity ~ 1 / 0.405).
+The column headers \emph{must} be named exactly as follows:
 \itemize{
-\item frequency: the tuning frequency or frequencies to use
+\item frequency: the target frequency or frequencies to use
 \item orbital_cycle: character string name of each orbital cycle.
 Multiple rows with the same name are allowed.
 }}
 
-\item{segment_edges}{stratigraphic points where sedimentation rate changes can  occur. Must be in the same stratigraphic scheme as geochron_data and cyclostrat_data.}
+\item{segment_edges}{A data frame specifying where sedimentation rate changes can occur. Must be in the same stratigraphic scheme as geochron_data and cyclostrat_data. The column headers \emph{must} be named exactly as follows
+\itemize{
+\item position: Stratigraphic position in depth coordinates (i.e. the top is 0). Note that the top and bottom of the section must be specified.
+\item thickness: Uniform uncertainty of \code{position}.
+\item hiatus_boundary: \code{TRUE} or \code{FALSE}. Should the layer boundary be treated as a hiatus?
+\item sed_min: minimum sedimentation rate boundary for the layer.
+\item sed_max: minimum sedimentation rate boundary for the layer.
+\itemize{
+\item Note: While \code{sed_min} and \code{sed_max} are specified in the same rows as the layer boundaries, they are applied to the layer between \emph{their own} row and the row below.
+}
+}}
 
-\item{iterations}{how many Markov Chain Monte Carlo iterations should the model run for}
+\item{iterations}{How many Markov Chain Monte Carlo iterations should the model run for}
 
-\item{burn}{how many initial iterations to toss when calculating credible intervals}
+\item{burn}{How many initial iterations to toss when calculating credible intervals}
+
+\item{method}{Probability calculation method. Currently only \code{malinverno} is supported.}
 }
 \value{
 The function returns a list of class \code{astroBayesModel}
 which contains the following objects:
-\code{CI} data frame containing the credible interval for the age model
-\code{anchor_point} a data.frame containing the posterior sample for the anchor_point
-parameter(s)
 \itemize{
+\item \code{CI} data frame containing the credible interval for the age model
+\item \code{anchor_point} a data.frame containing the posterior sample for the anchor_point
+parameter(s)
+\item \code{cyclostrat_CI} data frame containg the credible interval for the cyclostratigraphic data.
 \item \code{sed_rate} a matrix containing the posterior sample of sedimentation rate
-for each model segment
+for each model layer.
 \item \code{model_iterations} a matrix containing the individual model iterations used
 to calculate \code{CI}. These can be plotted against the \code{position} column in \code{CI}
 to visualize.
@@ -67,8 +80,8 @@ carried through for ease of data visualization.
 \item \code{segment_edges}
 \item \code{geochron_data}
 \item \code{cyclostrat_data}
-\item \code{sed_prior_range}
 \item \code{tuning_frequency}
+\item \code{hiatus_durations}
 }
 }
 \description{

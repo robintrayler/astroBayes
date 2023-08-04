@@ -9,7 +9,8 @@ visualize_likelihood(
   cyclostrat_data,
   tuning_frequency,
   resolution = 0.1,
-  method = "malinverno"
+  method = "malinverno",
+  plot = TRUE
 )
 }
 \description{

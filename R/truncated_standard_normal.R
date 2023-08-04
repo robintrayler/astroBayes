@@ -1,6 +1,6 @@
 
 #' Truncated Standard Normal
-#'  @name truncated_standard_normal
+#' @name truncated_standard_normal
 #' @param a lower truncation
 #' @param b upper truncation
 

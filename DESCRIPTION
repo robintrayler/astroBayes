@@ -1,7 +1,7 @@
 Package: astroBayes
 Type: Package
 Title: Bayesian Integration of Cyclostratigraphy and Radioisotopic Geochronology
-Version: 0.0.1
+Version: 1.0
 Author: Robin B. Trayler
 Maintainer: Robin B. Trayler <rtrayler@ucmerced.edu>
 Description: More about what it does (maybe more than one line)

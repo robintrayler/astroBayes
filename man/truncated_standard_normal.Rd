@@ -2,8 +2,7 @@
 % Please edit documentation in R/truncated_standard_normal.R
 \name{truncated_standard_normal}
 \alias{truncated_standard_normal}
-\title{Truncated Standard Normal
-@name truncated_standard_normal}
+\title{Truncated Standard Normal}
 \usage{
 truncated_standard_normal(a, b)
 }
@@ -18,5 +17,4 @@ deviation of 1.
 }
 \description{
 Truncated Standard Normal
-@name truncated_standard_normal
 }

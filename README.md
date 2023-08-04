@@ -59,7 +59,7 @@ plot(age_model, type = 'age_depth')
 ```
 ![](./figures/age_depth.jpeg)
 
-You can also inspect the posterior distribution of sedimentation rate, either as  kernel density estimates or as trace plots. 
+You can inspect the posterior distribution of sedimentation rate, either as  kernel density estimates or as trace plots. 
 
 ```
 plot(age_model, type = 'sed_rate')

@@ -14,21 +14,19 @@ A draft version of this manuscript is available at [github.com/robintrayler/astr
 devtools::install_github('robintrayler/astroBayes')
 ```
 
-Once `astroBayes` is installed it can be loaded in the usual way for `R` packaged by adding `library(astroBayes)` to the beginning of an `R` script.
-
 ## Using `astroBayes`
 
-`astroBayes` is designed to fit age-depth models to radioisotope geochronology and cyclostratigraphic data. `astroBayes` is not designed to test for the presence of astronomical signals in data, instead it is intended to be used in conjunction with the testing methods available (such as those available in [`{astrochron}`](https://geoscience.wisc.edu/research/x-ray-fluorescence-xrf-scanner-lab/astrochron-a-computational-tool-for-astrochronology/)). 
+`astroBayes` is designed to fit age-depth models to paired radioisotope geochronology and cyclostratigraphic data. `astroBayes` *is not designed* to test for the presence of astronomical signals in data, instead it is intended to be used in conjunction with the testing methods available elsewhere, such as those available in [`{astrochron}`](https://geoscience.wisc.edu/research/x-ray-fluorescence-xrf-scanner-lab/astrochron-a-computational-tool-for-astrochronology/). 
 
 ### Running the `astroBayes` model
 
-First load astroBayes and any other packages you want to use. 
+First, load `astroBayes`. 
 
 ```
-library(astroBayes)        # for modeling
+library(astroBayes)
 ```
 
-`astroBayes` includes a simple data set consisting of a set of radioisotopic dates, a cyclostratigraphic record, a set of target frequencies, and a set of layer boundaries. The example data can be loaded using the `data()` function. For details on the mechanics of the `astroBayes` model and how `layer_boundaries` are selected see the manuscript linked above. 
+`astroBayes` includes a simple testing data set consisting of a set of radioisotopic dates, a cyclostratigraphic record, a set of target frequencies, and a set of layer boundaries. The example data can be loaded using the `data()` function. For details on the mechanics of the `astroBayes` model and how `layer_boundaries` are selected see the manuscript linked above. 
 
 ```
 data("target_frequencies")
@@ -37,7 +35,7 @@ data("cyclostratigraphic_data")
 data("layer_boundaries")
 ```
 
-The primary function in `astroBayes` is `astro_bayes_model()`. This function uses a Metropolis-Hastings Markov Chain Monte Carlo algorithm to fit an age-depth model to the data by finding the most probable sedimentation rate for each model layer. 
+The primary function in `astroBayes` is `astro_bayes_model()`. This function uses a Metropolis-Hastings Markov Chain Monte Carlo algorithm to fit an age-depth model to the data by finding the most probable sedimentation rate for each model layer.
 
 Running the model will take a few minutes to several hours depending on the number of `iterations` and the complexity of the data (number of `dates`, number of data points in the cyclostratigraphic data, and the number of layers). A progress bar should pop up in the `R` terminal with a rough estimate of time remaining. The model below takes about 25 minutes to run on a 2022 MacBook Pro with an M1 Pro processor and 32 Gb of ram.
 
@@ -51,7 +49,7 @@ age_model <- astro_bayes_model(geochron_data = dates,
 ```
 
 ### Plotting 
-After the model has finished running you can visualize the results. 
+After the model has finished running you can visualize the results using several built in plots. 
 
 The `age_depth` plot shows the age-depth model as a median (black line) and 95% credible interval (shaded grey region). The dates are shown as colored normal distribution.
 

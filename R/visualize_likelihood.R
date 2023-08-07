@@ -1,4 +1,9 @@
-#' helper function to visualize the likelihood functions given a model layering scheme
+#' Helper function to visualize the likelihood functions given a model layering scheme.
+#'
+#' @description This function *does not* run the full Bayesian MCMC `astro_bayes_model`. Instead it
+#' calculate only the astronomical likelihood of the `cyclostrat_data` across a range of
+#' sedimentation rates given the `target_frequency` data frame. It is intended to help check for uni modal
+#' (or close to uni modal) likelihoods so layer boundary positions can be adjusted as needed.
 #'
 #' @name visualize_likelihood
 #'
@@ -101,6 +106,9 @@ visualize_likelihood <- function(layer_boundaries,
       xlab('sedimentation rate (m/Ma)') +
       ggtitle(paste(method, 'likelihood')) +
       scale_fill_viridis(discrete = TRUE,
+                         option = 'plasma',
+                         end = 0.9) +
+      scale_color_viridis(discrete = TRUE,
                          option = 'plasma',
                          end = 0.9)
     print(p)

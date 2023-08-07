@@ -2,7 +2,7 @@
 % Please edit documentation in R/visualize_likelihood.R
 \name{visualize_likelihood}
 \alias{visualize_likelihood}
-\title{helper function to visualize the likelihood functions given a model layering scheme}
+\title{Helper function to visualize the likelihood functions given a model layering scheme.}
 \usage{
 visualize_likelihood(
   layer_boundaries,
@@ -14,5 +14,8 @@ visualize_likelihood(
 )
 }
 \description{
-helper function to visualize the likelihood functions given a model layering scheme
+This function \emph{does not} run the full Bayesian MCMC \code{astro_bayes_model}. Instead it
+calculate only the astronomical likelihood of the \code{cyclostrat_data} across a range of
+sedimentation rates given the \code{target_frequency} data frame. It is intended to help check for uni modal
+(or close to uni modal) likelihoods so layer boundary positions can be adjusted as needed.
 }

@@ -99,4 +99,3 @@ plot(predictions)
 ```
 ![](./figures/predictions.jpeg)
 
-

@@ -3,6 +3,7 @@
 S3method(plot,astroBayesModel)
 S3method(plot,astroBayesPrediction)
 S3method(predict,astroBayesModel)
+S3method(summary,astroBayesModel)
 export(adaptive_update)
 export(astro_bayes_model)
 export(gen_cycles)

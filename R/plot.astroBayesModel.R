@@ -159,6 +159,7 @@ plot_pgram <- function(age_model) {
     plots[[i]] <- age_model$cyclostrat_CI[[i]] |>
       select(median,
              value) |>
+      drop_na() |>
       linterp(genplot = FALSE,
               verbose = FALSE) |>
       periodogram(genplot = FALSE,
@@ -183,7 +184,7 @@ plot_pgram <- function(age_model) {
                  linetype = 'dashed',
                  size = 0.5) +
       xlab('Frequency (cycles/Ma)') +
-      xlim(0, max(age_model$tuning_frequency$frequency))
+      xlim(0, max(age_model$tuning_frequency$frequency)) +
       ylab('Spectral Power') +
       theme(panel.grid = element_blank())
   }

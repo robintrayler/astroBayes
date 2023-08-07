@@ -26,7 +26,7 @@ First, load `astroBayes`.
 library(astroBayes)
 ```
 
-`astroBayes` includes a simple testing data set consisting of a set of radioisotopic dates, a cyclostratigraphic record, a set of target frequencies, and a set of layer boundaries. The example data can be loaded using the `data()` function. For details on the mechanics of the `astroBayes` model and how `layer_boundaries` are selected see the manuscript linked above. 
+`astroBayes` includes a simple testing data set consisting of a set of radioisotopic dates, a cyclostratigraphic record, a set of target frequencies, and a set of layer boundaries. The example data can be loaded using the `data()` function. **For details on the mechanics of the `astroBayes` model and how `layer_boundaries` are selected see the manuscript linked above.** 
 
 ```
 data("target_frequencies")

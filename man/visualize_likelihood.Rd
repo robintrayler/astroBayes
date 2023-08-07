@@ -2,17 +2,17 @@
 % Please edit documentation in R/visualize_likelihood.R
 \name{visualize_likelihood}
 \alias{visualize_likelihood}
-\title{helper function to visualize the likeihood functions given a model segementaiton scheme}
+\title{helper function to visualize the likelihood functions given a model layering scheme}
 \usage{
 visualize_likelihood(
-  segment_edges,
+  layer_boundaries,
   cyclostrat_data,
-  tuning_frequency,
+  target_frequency,
   resolution = 0.1,
   method = "malinverno",
   plot = TRUE
 )
 }
 \description{
-helper function to visualize the likeihood functions given a model segementaiton scheme
+helper function to visualize the likelihood functions given a model layering scheme
 }

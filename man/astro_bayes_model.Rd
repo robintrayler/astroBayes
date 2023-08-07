@@ -8,8 +8,8 @@ modified to anchor the resulting age model using radioisotopic (e.g., U-Pb Ar/Ar
 astro_bayes_model(
   geochron_data,
   cyclostrat_data,
-  tuning_frequency,
-  segment_edges,
+  target_frequency,
+  layer_boundaries,
   iterations = 10000,
   burn = 5000,
   method = "malinverno"
@@ -33,21 +33,23 @@ column headers \emph{must} be named exactly as follows:
 \item value: the measurement value of the proxy record.
 }}
 
-\item{tuning_frequency}{data frame of target frequencies to use. Currently frequencies must be in cycles / Ma (i.e., long eccentricity ~ 1 / 0.405).
+\item{target_frequency}{data frame of target frequencies to use. Frequencies must be in cycles / Ma (i.e., long eccentricity ~ 1 / 0.405).
 The column headers \emph{must} be named exactly as follows:
 \itemize{
 \item frequency: the target frequency or frequencies to use
 \item orbital_cycle: character string name of each orbital cycle.
-Multiple rows with the same name are allowed.
+\itemize{
+\item Multiple rows with the same name are allowed.
+}
 }}
 
-\item{segment_edges}{A data frame specifying where sedimentation rate changes can occur. Must be in the same stratigraphic scheme as geochron_data and cyclostrat_data. The column headers \emph{must} be named exactly as follows
+\item{layer_boundaries}{A data frame specifying where sedimentation rate changes can occur. Must be in the same stratigraphic scheme as geochron_data and cyclostrat_data. The column headers \emph{must} be named exactly as follows
 \itemize{
-\item position: Stratigraphic position in depth coordinates (i.e. the top is 0). Note that the top and bottom of the section must be specified.
-\item thickness: Uniform uncertainty of \code{position}.
-\item hiatus_boundary: \code{TRUE} or \code{FALSE}. Should the layer boundary be treated as a hiatus?
-\item sed_min: minimum sedimentation rate boundary for the layer.
-\item sed_max: minimum sedimentation rate boundary for the layer.
+\item \code{position}: Stratigraphic position in depth coordinates (i.e. the top is 0). Note that the top and bottom of the section must be specified.
+\item \code{thickness}: Uniform uncertainty of \code{position}.
+\item \code{hiatus_boundary}: \code{TRUE} or \code{FALSE}. Should the layer boundary be treated as a hiatus?
+\item \code{sed_min}: minimum sedimentation rate boundary for the layer.
+\item \code{sed_max}: minimum sedimentation rate boundary for the layer.
 \itemize{
 \item Note: While \code{sed_min} and \code{sed_max} are specified in the same rows as the layer boundaries, they are applied to the layer between \emph{their own} row and the row below.
 }
@@ -77,10 +79,10 @@ to visualize.
 The output object also includes all the model inputs: shown below. These are
 carried through for ease of data visualization.
 \itemize{
-\item \code{segment_edges}
+\item \code{layer_boundaries}
 \item \code{geochron_data}
 \item \code{cyclostrat_data}
-\item \code{tuning_frequency}
+\item \code{target_frequency}
 \item \code{hiatus_durations}
 }
 }

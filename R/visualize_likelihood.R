@@ -1,5 +1,4 @@
-#' helper function to visualize the likeihood functions given a model segementaiton scheme
-
+#' helper function to visualize the likelihood functions given a model layering scheme
 #'
 #' @name visualize_likelihood
 #'
@@ -11,9 +10,9 @@
 #' @md
 #' @export
 #'
-visualize_likelihood <- function(segment_edges,
+visualize_likelihood <- function(layer_boundaries,
                                  cyclostrat_data,
-                                 tuning_frequency,
+                                 target_frequency,
                                  resolution = 0.1,
                                  method = 'malinverno',
                                  plot = TRUE) {
@@ -26,8 +25,8 @@ visualize_likelihood <- function(segment_edges,
     rm(cycle_list)
   }
 
-  # calculate the number of segments
-  n_segments     <- nrow(segment_edges) - 1
+  # calculate the number of layers
+  n_segments     <- nrow(layer_boundaries) - 1
 
   # calculate the number of cyclostrat_records
   n_cyclostrat   <- length(cyclostrat_data)
@@ -37,9 +36,9 @@ visualize_likelihood <- function(segment_edges,
   segment_number <- 1:n_segments
 
   for(z in 1:n_segments) {
-    segment_names[z] <- paste(segment_edges$position[z],
+    segment_names[z] <- paste(layer_boundaries$position[z],
                               '-',
-                              segment_edges$position[z + 1],
+                              layer_boundaries$position[z + 1],
                               'meters')
   }
 
@@ -48,8 +47,8 @@ visualize_likelihood <- function(segment_edges,
 
   # calculate a grid of sedimentation rates
   sed_grid <- seq(
-    min(segment_edges$sed_min, na.rm = TRUE),
-    max(segment_edges$sed_max, na.rm = TRUE),
+    min(layer_boundaries$sed_min, na.rm = TRUE),
+    max(layer_boundaries$sed_max, na.rm = TRUE),
     by = resolution)
 
   # set up a matrix for storage
@@ -62,9 +61,9 @@ visualize_likelihood <- function(segment_edges,
       LL <- vector()
       for(k in seq_along(cyclostrat_data)) {
         LL[k] <- calculate_likelihood(sed_rate = sed_grid[j],
-                                      segment_edges = segment_edges$position[i:(i + 1)],
+                                      layer_boundaries = layer_boundaries$position[i:(i + 1)],
                                       cyclostrat = cyclostrat_data[[k]],
-                                      tuning_frequency = tuning_frequency,
+                                      target_frequency = target_frequency,
                                       method = method) |> exp()
       }
 
@@ -100,7 +99,10 @@ visualize_likelihood <- function(segment_edges,
       theme(axis.text.y = element_blank(),
             legend.position = 'none')  +
       xlab('sedimentation rate (m/Ma)') +
-      ggtitle(paste(method, 'likelihood'))
+      ggtitle(paste(method, 'likelihood')) +
+      scale_fill_viridis(discrete = TRUE,
+                         option = 'plasma',
+                         end = 0.9)
     print(p)
   }
 

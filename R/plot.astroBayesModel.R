@@ -5,10 +5,9 @@
 #'
 #' * age_depth: plots the geochrologic data where age is on the x axis and depth
 #'   is on the y axis.
-#' * sed_rate: plots the posterior density of sedimentation rate for each segment
-#' * trace: plots the trace plot for each segment
-#' * periodogram: plots the  periodogram for each segment scaled to the median
-#'   sedimentation rate for that segment
+#' * sed_rate: plots the posterior density of sedimentation rate for each layer
+#' * trace: plots the trace plot for each layer
+#' * periodogram: plots the  periodogram of the median model
 #'
 #' @import "ggplot2"
 #' @import "cowplot"
@@ -90,9 +89,9 @@ plot_sed_rate <- function(age_model) {
       xlim(range(age_model$sed_rate[age_model$burn:age_model$iterations, k])) +
       xlab('sed rate (m/Ma)') +
       theme_bw() +
-      ggtitle(label = paste(age_model$segment_edges$position[k],
+      ggtitle(label = paste(age_model$layer_boundaries$position[k],
                             '-',
-                            age_model$segment_edges$position[k + 1],
+                            age_model$layer_boundaries$position[k + 1],
                             'meters \n',
                             'median sed rate = \n',
                             round(quantile(age_model$sed_rate[age_model$burn:age_model$iterations, k],
@@ -124,9 +123,9 @@ plot_trace <- function(age_model) {
       xlab('iteration') +
       ylab('sed rate') +
       theme_bw() +
-      ggtitle(label = paste(age_model$segment_edges$position[k],
+      ggtitle(label = paste(age_model$layer_boundaries$position[k],
                             '-',
-                            age_model$segment_edges$position[k + 1],
+                            age_model$layer_boundaries$position[k + 1],
                             'meters \n',
                             'median sed rate = \n',
                             round(quantile(age_model$sed_rate[age_model$burn:age_model$iterations, k],
@@ -149,7 +148,7 @@ plot_pgram <- function(age_model) {
   # preallocate a list to store plots
   plots <- list()
 
-  # preallocate colors for different segments
+  # preallocate colors for different layers
   colors <- viridis(n = length(age_model$cyclostrat_data),
                     option = 'plasma',
                     end = 0.75)
@@ -178,13 +177,13 @@ plot_pgram <- function(age_model) {
                 color = 2,
                 linetype = 'dashed') +
       theme_bw() +
-      geom_vline(data = age_model$tuning_frequency,
+      geom_vline(data = age_model$target_frequency,
                  mapping = aes(xintercept = frequency),
                  color = 'grey',
                  linetype = 'dashed',
                  size = 0.5) +
       xlab('Frequency (cycles/Ma)') +
-      xlim(0, max(age_model$tuning_frequency$frequency)) +
+      xlim(0, max(age_model$target_frequency$frequency)) +
       ylab('Spectral Power') +
       theme(panel.grid = element_blank())
   }

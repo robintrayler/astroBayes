@@ -7,7 +7,7 @@
 time_opt_likelihood(
   cyclostrat_data,
   sed_rate,
-  tuning_frequency,
+  target_frequency,
   f_low = 0.035,
   f_high = 0.065,
   roll = 10^3

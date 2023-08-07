@@ -4,7 +4,7 @@
 # by Robin B. Trayler, Mark D. Schmitz and Stephen R. Meyers
 
 # sed_rate should be in m/Ma
-# tuning_frequency should be in Ma, 1/Ma, with cycles labeled
+# target_frequency should be in Ma, 1/Ma, with cycles labeled
 
 
 #' Haario et al. (2001)
@@ -21,7 +21,7 @@
 #'
 time_opt_likelihood <- function(cyclostrat_data,
                                 sed_rate,
-                                tuning_frequency,
+                                target_frequency,
                                 f_low = 0.035,
                                 f_high = 0.065,
                                 roll = 10 ^ 3) {
@@ -30,12 +30,12 @@ time_opt_likelihood <- function(cyclostrat_data,
   sed_rate <- sed_rate * 0.001 # convert to m/ka
 
   # pull out eccentricity frequencies and convert to ka
-  target_E <- tuning_frequency %>%
+  target_E <- target_frequency %>%
     filter(orbital_cycle == 'eccentricity') %>%
     pull(period) * 1000
 
   # pull out precession frequencies and convert to ka
-  target_P <- tuning_frequency %>%
+  target_P <- target_frequency %>%
     filter(orbital_cycle == 'precession') %>%
     pull(period) * 1000
 

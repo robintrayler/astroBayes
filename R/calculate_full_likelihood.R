@@ -3,9 +3,9 @@
 #
 
 calculate_full_likelihood <- function(sed_rate,         # vector of sedimentation rates
-                                      segment_edges,    # vector segment boundaries
+                                      layer_boundaries,    # vector segment boundaries
                                       cyclostrat_data,  # cyclostrat data
-                                      tuning_frequency, # tuning frequencies
+                                      target_frequency, # tuning frequencies
                                       method = NA) {
 
   # use the default method if unspecified
@@ -15,16 +15,10 @@ calculate_full_likelihood <- function(sed_rate,         # vector of sedimentatio
 
   if(method == 'malinverno') {
     LL <- full_malinverno_likelihood(sed_rate = sed_rate,
-                                     segment_edges = segment_edges,
+                                     layer_boundaries = layer_boundaries,
                                      cyclostrat_data = cyclostrat_data,
-                                     tuning_frequency = tuning_frequency)
+                                     target_frequency = target_frequency)
   }
-
-  # if(method == 'time_opt') {
-  #   # LL[i] <- time_opt_likelihood(cyclostrat_data = current_cyclostrat,
-  #   #                              sed_rate = sed_rate[i],
-  #   #                              tuning_frequency = tuning_frequency)$LL_total
-  # }
 
 
   # calculate joint probability
@@ -35,20 +29,20 @@ calculate_full_likelihood <- function(sed_rate,         # vector of sedimentatio
 
 # INPUTS
 # rate = vector of sedimentation rates
-# segment_edges = sedimentation rate change points
+# layer_boundaries = sedimentation rate change points
 # cyclostrat = cyclostratigraphic record spanning the range of segment_edges
 # tuning frequencies = vector of tuning frequencies to use
 full_malinverno_likelihood <- function(sed_rate,
-                                       segment_edges,
+                                       layer_boundaries,
                                        cyclostrat_data,
-                                       tuning_frequency) {
+                                       target_frequency) {
 
   # prepare the data ----------------------------------------------------------
   # calculate the floating age model
-  age_model <- c(0, cumsum(diff(segment_edges) / sed_rate))
+  age_model <- c(0, cumsum(diff(layer_boundaries) / sed_rate))
 
   # form an interpolation function
-  f <- approxfun(x = segment_edges,
+  f <- approxfun(x = layer_boundaries,
                  y = age_model)
   # apply and overwrite interpolation function
   p <- cyclostrat_data %>%
@@ -72,7 +66,7 @@ full_malinverno_likelihood <- function(sed_rate,
                    y = probability))
 
   # calculate joint probability
-  LL <- p(tuning_frequency) %>%
+  LL <- p(target_frequency) %>%
     log() %>%
     sum()
 

@@ -2,15 +2,15 @@
 # Malinverno et al. (2010).
 # INPUTS
 # sed_rate = vector of sedimentation rates
-# segment_edges = sedimentation rate change points
-# cyclostrat = cyclostratigraphic record spanning the range of segment_edges
-# tuning frequencies = dataframe of tuning frequencies to use
+# layer_boundaries = sedimentation rate change points
+# cyclostrat = cyclostratigraphic record spanning the range of layer_boundaries
+# target_frequencies = data frame of tuning frequencies to use
 # OUTPUTS
 # LL = log-likelihood of `sed_rate`
 
 malinverno_likelihood <- function(cyclostrat_data,
                                   sed_rate,
-                                  tuning_frequency) {
+                                  target_frequency) {
 
   # calculate probability distribution and make interpolation function
   f <- cyclostrat_data %>%
@@ -30,7 +30,7 @@ malinverno_likelihood <- function(cyclostrat_data,
                    y   = probability))
 
   # calculate probability of tuning frequencies
-  LL <- f(tuning_frequency$frequency) %>%
+  LL <- f(target_frequency$frequency) %>%
     log() %>%
     sum()
   return(LL)

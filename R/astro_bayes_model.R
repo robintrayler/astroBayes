@@ -16,19 +16,19 @@
 #' * position: stratigraphic position in depth coordinates (i.e. the top is 0).
 #' * value: the measurement value of the proxy record.
 #'
-#' @param tuning_frequency data frame of target frequencies to use. Currently frequencies must be in cycles / Ma (i.e., long eccentricity ~ 1 / 0.405).
+#' @param target_frequency data frame of target frequencies to use. Frequencies must be in cycles / Ma (i.e., long eccentricity ~ 1 / 0.405).
 #' The column headers *must* be named exactly as follows:
 #'
 #'  * frequency: the target frequency or frequencies to use
 #'  * orbital_cycle: character string name of each orbital cycle.
-#'   Multiple rows with the same name are allowed.
+#'    * Multiple rows with the same name are allowed.
 #'
-#' @param segment_edges A data frame specifying where sedimentation rate changes can occur. Must be in the same stratigraphic scheme as geochron_data and cyclostrat_data. The column headers *must* be named exactly as follows
-#'  * position: Stratigraphic position in depth coordinates (i.e. the top is 0). Note that the top and bottom of the section must be specified.
-#'  * thickness: Uniform uncertainty of `position`.
-#'  * hiatus_boundary: `TRUE` or `FALSE`. Should the layer boundary be treated as a hiatus?
-#'  * sed_min: minimum sedimentation rate boundary for the layer.
-#'  * sed_max: minimum sedimentation rate boundary for the layer.
+#' @param layer_boundaries A data frame specifying where sedimentation rate changes can occur. Must be in the same stratigraphic scheme as geochron_data and cyclostrat_data. The column headers *must* be named exactly as follows
+#'  * `position`: Stratigraphic position in depth coordinates (i.e. the top is 0). Note that the top and bottom of the section must be specified.
+#'  * `thickness`: Uniform uncertainty of `position`.
+#'  * `hiatus_boundary`: `TRUE` or `FALSE`. Should the layer boundary be treated as a hiatus?
+#'  * `sed_min`: minimum sedimentation rate boundary for the layer.
+#'  * `sed_max`: minimum sedimentation rate boundary for the layer.
 #'       * Note: While `sed_min` and `sed_max` are specified in the same rows as the layer boundaries, they are applied to the layer between *their own* row and the row below.
 #'
 #' @param iterations How many Markov Chain Monte Carlo iterations should the model run for
@@ -58,10 +58,10 @@
 #'
 #'  The output object also includes all the model inputs: shown below. These are
 #'  carried through for ease of data visualization.
-#'  * `segment_edges`
+#'  * `layer_boundaries`
 #'  * `geochron_data`
 #'  * `cyclostrat_data`
-#'  * `tuning_frequency`
+#'  * `target_frequency`
 #'  * `hiatus_durations`
 #'
 #' @md
@@ -69,8 +69,8 @@
 
 astro_bayes_model <- function(geochron_data,
                               cyclostrat_data,
-                              tuning_frequency,
-                              segment_edges,
+                              target_frequency,
+                              layer_boundaries,
                               iterations = 10000,
                               burn = 5000,
                               method = 'malinverno') {
@@ -90,9 +90,9 @@ astro_bayes_model <- function(geochron_data,
   ) {stop('geochron_data columns are named incorrectly. \n
           Column names must be exactly: "id", "age", "age_sd", "position", "thickness"')}
 
-  # segment edges
-  if(!all(c('position', 'thickness', 'hiatus_boundary', 'sed_min', 'sed_max') %in% names(segment_edges))
-  ) {stop('segment_edges columns are named incorrectly. \n
+  # layer_boundaries
+  if(!all(c('position', 'thickness', 'hiatus_boundary', 'sed_min', 'sed_max') %in% names(layer_boundaries))
+  ) {stop('layer_boundaries columns are named incorrectly. \n
           Column names must be exactly: "position", "thickness", "hiatus_boundary", "sed_min", "sed_max"')}
 
   # cyclostrat data
@@ -100,9 +100,9 @@ astro_bayes_model <- function(geochron_data,
   # ) {stop('cyclostrat_data columns are named incorrectly. \n
   #         Column names must be exactly: "position", "value"')}
 
-  # tuning frequency
-  if(!all(c('frequency', 'orbital_cycle') %in% names(tuning_frequency))
-  ) {stop('tuning_frequency columns are named incorrectly. \n
+  # target_frequency
+  if(!all(c('frequency', 'orbital_cycle') %in% names(target_frequency))
+  ) {stop('target_frequency columns are named incorrectly. \n
           Column names must be exactly: "frequency", "orbital_cycle"')}
 
   # check for missing values --------------------------------------------------
@@ -111,9 +111,9 @@ astro_bayes_model <- function(geochron_data,
     stop('geochron_data has 0 rows. It must contain at least two rows')
   }
 
-  # segment edges
-  if(!(nrow(segment_edges) > 1)) {
-    stop('segment_edges has less than 2 rows. It must contain at least two rows')
+  #  layer_boundaries
+  if(!(nrow(layer_boundaries) > 1)) {
+    stop('layer_boundaries has less than 2 rows. It must contain at least two rows')
   }
 
   # cyclostrat data
@@ -121,9 +121,9 @@ astro_bayes_model <- function(geochron_data,
     stop('cyclostrat_data has 0 rows.')
   }
 
-  # tuning frequency
-  if(!(nrow(tuning_frequency) > 0)) {
-    stop('tuning_frequency has 0 rows. It must contain at least 1 row')
+  # target frequency
+  if(!(nrow(target_frequency) > 0)) {
+    stop('target_frequency has 0 rows. It must contain at least 1 row')
   }
 
   # use malinverno probability if not specified
@@ -142,29 +142,29 @@ astro_bayes_model <- function(geochron_data,
 
   message('finished')
   # store the input data for when positions move around later
-  master_edges <- segment_edges
+  master_edges <- layer_boundaries
   master_geochron <- geochron_data
 
   # define interpolation grid -------------------------------------------------
-  position_grid <- seq(from = min(segment_edges$position),
-                       to   = max(segment_edges$position),
+  position_grid <- seq(from = min(layer_boundaries$position),
+                       to   = max(layer_boundaries$position),
                        length = 1000)
 
   # set up model storage ------------------------------------------------------
-  # store the sedimentation rate for each segment
+  # store the sedimentation rate for each layer
   sed_rate <- matrix(nrow = iterations,
-                     ncol = nrow(segment_edges) - 1)
+                     ncol = nrow(layer_boundaries) - 1)
 
-  segment_storage <- matrix(nrow = iterations,
-                            ncol = nrow(segment_edges))
+  layer_storage <- matrix(nrow = iterations,
+                            ncol = nrow(layer_boundaries))
 
-  segment_storage[1, ] <- segment_edges$position
+  layer_storage[1, ] <- layer_boundaries$position
 
   # store all probabilities and anchor point
   anchor_point <- vector(length = iterations)
 
   # hiatus duration
-  n_hiatus <- sum(segment_edges$hiatus_boundary)
+  n_hiatus <- sum(layer_boundaries$hiatus_boundary)
   if(n_hiatus > 0) {
     hiatus_storage <- matrix(0,
                              nrow = iterations,
@@ -192,9 +192,9 @@ astro_bayes_model <- function(geochron_data,
 
   message('Setting initial sedimentation rates to maximum likelihood... \n (this can take a few minutes)')
   # set the starting rates to the maximum likelihood
-  sed_rate[1, ] <- visualize_likelihood(segment_edges = segment_edges,
-                                         cyclostrat_data = cyclostrat_data,
-                                         tuning_frequency = tuning_frequency,
+  sed_rate[1, ] <- visualize_likelihood(layer_boundaries  = layer_boundaries,
+                                         cyclostrat_data  = cyclostrat_data,
+                                        target_frequency = target_frequency,
                                          resolution = 0.1,
                                          method = method,
                                         plot = FALSE) |>
@@ -204,7 +204,7 @@ astro_bayes_model <- function(geochron_data,
     rev()
 
   # anchor the initial model in time ------------------------------------------
-  model_storage[, 1] <- anchor_sed_model(segment_edges = segment_edges,
+  model_storage[, 1] <- anchor_sed_model(layer_boundaries = layer_boundaries,
                                          sed_rate[1, ],
                                          anchor_point = anchor_point[1],
                                          position_grid = position_grid,
@@ -235,13 +235,14 @@ astro_bayes_model <- function(geochron_data,
       hiatus_storage[j, ] <- hiatus_storage[j - 1, ]
     }
 
-    # randomly adjust segment edges -------------------------------------------
-    segment_edges$position <- runif(nrow(master_edges),
+    # randomly adjust layer edges ---------------------------------------------
+    layer_boundaries$position <- runif(nrow(master_edges),
                                     min = master_edges$position -
                                       master_edges$thickness / 2,
                                     max = master_edges$position +
                                       master_edges$thickness / 2)
-    segment_storage[j, ] <- segment_edges$position
+
+    layer_storage[j, ] <- layer_boundaries$position
     # randomly geochronology positions ----------------------------------------
     geochron_data$position = runif(nrow(master_geochron),
                                    min = master_geochron$position -
@@ -258,16 +259,16 @@ astro_bayes_model <- function(geochron_data,
                                        i = j,
                                        start_index = burn / 2,
                                        initial_Cd = 0.01,
-                                       lower = segment_edges$sed_min[q],
-                                       upper = segment_edges$sed_max[q])
+                                       lower = layer_boundaries$sed_min[q],
+                                       upper = layer_boundaries$sed_max[q])
 
       # calculate the probability ---------------------------------------------
       proposed_prob <- vector()
       for(i in seq_along(cyclostrat_data)) {
         proposed_prob[i] <- calculate_likelihood(sed_rate = proposed_rate,
-                                                 segment_edges = segment_edges$position[q:(q + 1)],
+                                                 layer_boundaries = layer_boundaries$position[q:(q + 1)],
                                                  cyclostrat = cyclostrat_data[[i]],
-                                                 tuning_frequency = tuning_frequency,
+                                                 target_frequency = target_frequency,
                                                  method = method)
 
       }
@@ -276,9 +277,9 @@ astro_bayes_model <- function(geochron_data,
       current_prob <- vector()
       for(i in seq_along(cyclostrat_data)) {
         current_prob[i] <- calculate_likelihood(sed_rate = sed_rate[j - 1, q],
-                                                segment_edges = segment_edges$position[q:(q + 1)],
+                                                layer_boundaries = layer_boundaries$position[q:(q + 1)],
                                                 cyclostrat = cyclostrat_data[[i]],
-                                                tuning_frequency = tuning_frequency,
+                                                target_frequency = target_frequency,
                                                 method = method)
 
       }
@@ -286,7 +287,7 @@ astro_bayes_model <- function(geochron_data,
 
       # calculate the radioisotopic probability -------------------------------
       current_rates[q] <- proposed_rate
-      model_proposed <- anchor_sed_model(segment_edges = segment_edges,
+      model_proposed <- anchor_sed_model(layer_boundaries = layer_boundaries,
                                          sed_rate = current_rates,
                                          anchor_point = anchor_point[j - 1],
                                          hiatus_duration =
@@ -303,7 +304,7 @@ astro_bayes_model <- function(geochron_data,
                                          age_sd = geochron_data$age_sd,
                                          position = geochron_data$position)
 
-      model_current <- anchor_sed_model(segment_edges = segment_edges,
+      model_current <- anchor_sed_model(layer_boundaries = layer_boundaries,
                                         sed_rate = sed_rate[j - 1, ],
                                         anchor_point = anchor_point[j - 1],
                                         hiatus_duration =
@@ -342,7 +343,7 @@ astro_bayes_model <- function(geochron_data,
                                   upper = 1e10)
 
     # anchor the proposed and current models in absolute time -----------------
-    model_proposed <- anchor_sed_model(segment_edges = segment_edges,
+    model_proposed <- anchor_sed_model(layer_boundaries = layer_boundaries,
                                        sed_rate = sed_rate[j, ],
                                        anchor_point = new_anchor,
                                        hiatus_duration =
@@ -353,7 +354,7 @@ astro_bayes_model <- function(geochron_data,
                                          },
                                        position_grid = position_grid)
 
-    model_current <- anchor_sed_model(segment_edges = segment_edges,
+    model_current <- anchor_sed_model(layer_boundaries = layer_boundaries,
                                       sed_rate = sed_rate[j, ],
                                       anchor_point = anchor_point[j - 1],
                                       hiatus_duration =
@@ -404,13 +405,13 @@ astro_bayes_model <- function(geochron_data,
       }
 
       # anchor the model in absolute time ---------------------------------------
-      model_proposed <- anchor_sed_model(segment_edges = segment_edges,
+      model_proposed <- anchor_sed_model(layer_boundaries = layer_boundaries,
                                          sed_rate = sed_rate[j, ],
                                          anchor_point = anchor_point[j],
                                          hiatus_duration = duration,
                                          position_grid = position_grid)
 
-      model_current <- anchor_sed_model(segment_edges = segment_edges,
+      model_current <- anchor_sed_model(layer_boundaries = layer_boundaries,
                                         sed_rate = sed_rate[j, ],
                                         anchor_point = anchor_point[j],
                                         hiatus_duration =
@@ -498,11 +499,11 @@ astro_bayes_model <- function(geochron_data,
                 burn = burn,                         # burn-in
                 model_iterations = model_storage,    # individual age models
                 sed_rate = sed_rate,                 # sedimentation rate chains
-                segment_edges = master_edges,        # segment_edges input
-                segment_storage = segment_storage,    # layer boundary positions
+                layer_boundaries = master_edges,     # layer_boundaries input
+                layer_storage = layer_storage,     # layer boundary positions
                 geochron_data = master_geochron,     # geochron input
                 cyclostrat_data = cyclostrat_data,   # cyclostrat_data input
-                tuning_frequency = tuning_frequency, # tuning frequencies input
+                target_frequency = target_frequency, # target frequencies input
                 hiatus_durations = hiatus_storage)   # hiatus duration
 
   # assign a class and return

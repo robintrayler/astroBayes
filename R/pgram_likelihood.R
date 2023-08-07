@@ -1,14 +1,14 @@
 pgram_likelihood <- function(sed_rate,
-                             segment_edges,
+                             layer_boundaries,
                              cyclostrat,
-                             tuning_frequency){
+                             target_frequency){
   # this function is an implementation of the probability calculations from
   # Malinverno et al. (2010).
   # INPUTS
   # sed_rate = vector of sedimentation rates
-  # segment_edges = sedimentation rate change points
-  # cyclostrat = cyclostratigraphic record spanning the range of segment_edges
-  # tuning frequencies = vector of tuning frequencies to use
+  # layer_boundaries = sedimentation rate change points
+  # cyclostrat = cyclostratigraphic record spanning the range of layer_boundaries
+  # target_frequency = vector of tuning frequencies to use
   # OUTPUTS
   # LL = log-likelihood of `sed_rate`
 
@@ -16,10 +16,10 @@ pgram_likelihood <- function(sed_rate,
   LL <- vector(length = length(sed_rate))
 
   for(i in 1:length(sed_rate)) {
-    # loop through all segments an calculate scaled periodogram ---------------
+    # loop through all layers an calculate scaled periodogram -----------------
     f <- cyclostrat %>%
-      filter(position > segment_edges[i] &
-               position < segment_edges[i + 1]) %>%
+      filter(position > layer_boundaries[i] &
+               position < layer_boundaries[i + 1]) %>%
       astrochron::periodogram(output = 1,
                   verbose = FALSE,
                   genplot = FALSE,
@@ -33,7 +33,7 @@ pgram_likelihood <- function(sed_rate,
                      y   = probability))
 
     # calculate probability of tuning frequencies
-    LL[i] <- f(tuning_frequency) %>%
+    LL[i] <- f(target_frequency) %>%
       log() %>%
       sum()
   }

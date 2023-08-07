@@ -16,10 +16,9 @@
 \itemize{
 \item age_depth: plots the geochrologic data where age is on the x axis and depth
 is on the y axis.
-\item sed_rate: plots the posterior density of sedimentation rate for each segment
-\item trace: plots the trace plot for each segment
-\item periodogram: plots the  periodogram for each segment scaled to the median
-sedimentation rate for that segment
+\item sed_rate: plots the posterior density of sedimentation rate for each layer
+\item trace: plots the trace plot for each layer
+\item periodogram: plots the  periodogram of the median model
 }}
 }
 \value{

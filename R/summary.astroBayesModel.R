@@ -36,8 +36,8 @@ summarize_sed_rate <- function(age_model) {
 
   # calculate credible interval for each sed rate
   for(i in 1:ncol(age_model$sed_rate)){
-    sed_rate_CI$min_position[i] <- age_model$segment_edges$position[i]
-    sed_rate_CI$max_position[i] <- age_model$segment_edges$position[i+1]
+    sed_rate_CI$min_position[i] <- age_model$layer_boundaries$position[i]
+    sed_rate_CI$max_position[i] <- age_model$layer_boundaries$position[i+1]
     sed_rate_CI[i, 3:5] <- quantile(age_model$sed_rate[, i],
                                     prob = c(0.25, 0.5, 0.975))
   }
@@ -57,7 +57,7 @@ summarize_dates <- function(age_model) {
 # hiatus position(s) ----------------------------------------------------------
 summarize_hiatus <- function(age_model) {
   # how many hiatuses
-  n_hiatus <- sum(age_model$segment_edges$hiatus_boundary)
+  n_hiatus <- sum(age_model$layer_boundaries$hiatus_boundary)
 
   # preallocate storage
   hiatus_CI <- data.frame(
@@ -70,7 +70,7 @@ summarize_hiatus <- function(age_model) {
 
     # loop through the hiatuses
     for(i in 1:n_hiatus) {
-      hiatus_CI$position[i] <- age_model$segment_edges$position[age_model$segment_edges$hiatus_boundary][i]
+      hiatus_CI$position[i] <- age_model$layer_boundaries$position[age_model$layer_boundaries$hiatus_boundary][i]
 
       hiatus_CI[i, 2:4] <- quantile(age_model$hiatus_durations[, i],
                                     prob = c(0.025, 0.5, 0.975))

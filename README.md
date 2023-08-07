@@ -79,7 +79,7 @@ plot(age_model, type = 'periodogram')
 
 ### Predictions
 
-astroBayes can predict the age of stratigraphic points within the bounds of the age-depth model. Predictions us the `predict()` function. Positions to predict should be stored in a data frame with three columns: `position`, `thickness`, and `id`. 
+`astroBayes` can predict the age of stratigraphic points within the bounds of the age-depth model. Predictions us the `predict()` function. Positions to predict should be stored in a data frame with three columns: `position`, `thickness`, and `id`. 
 
 ```
 # define some positions to predict 
@@ -98,4 +98,16 @@ You can plot the predictions using `plot()`.
 plot(predictions)
 ```
 ![](./figures/predictions.jpeg)
+
+### Summarizing
+
+There are several summary types available in `astroBayes`. Each returns the 95% credible interval of the relevant model parameters. 
+
+```
+summmary(age_model, type = 'sed_rate')
+summmary(age_model, type = 'dates')
+summmary(age_model, type = 'hiatus')
+summmary(age_model, type = 'anchor')
+```
+
 

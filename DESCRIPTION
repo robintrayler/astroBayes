@@ -4,9 +4,8 @@ Title: Bayesian Integration of Cyclostratigraphy and Radioisotopic Geochronology
 Version: 1.0
 Author: Robin B. Trayler
 Maintainer: Robin B. Trayler <rtrayler@ucmerced.edu>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Description: astroBayes fits age-depth models to paired sets of radioisotopic dates and cyclostratigraphic data to facilitate the correlation of sections and paleoclimate records in numerical time.
+License: MIT + file LICENSE
 Depends: R (>= 4.2)
 Encoding: UTF-8
 LazyData: true

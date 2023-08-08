@@ -13,6 +13,7 @@
 #' @import "cowplot"
 #' @import "viridis"
 #' @import "ggridges"
+#' @import "purrr"
 #'
 #' @return a list with a whole bunch of stuff in it.
 #' @md

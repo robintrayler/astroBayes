@@ -8,6 +8,7 @@
 #' @name visualize_likelihood
 #'
 #' @import "tidyverse"
+#' @import "ggridges"
 #' @import "dplyr"
 #' @import "astrochron"
 #' @import "tibble"

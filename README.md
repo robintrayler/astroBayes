@@ -72,7 +72,7 @@ plot(age_model, type = 'trace')
 
 You can also check for quality of the model fit by comparing a periodogram of the data with the age model applied. The target frequencies uses are shown as vertical dashed lines. 
 
-```
+```{r}
 plot(age_model, type = 'periodogram')
 ```
 ![](./figures/periodogram.jpeg)
@@ -101,13 +101,13 @@ plot(predictions)
 
 ### Summarizing
 
-There are several summary types available in `astroBayes`. Each returns the 95% credible interval of the relevant model parameters. 
+Several `summary()` functions are available to extract the 95% credible interval for different model parameters.
 
 ```
-summary(age_model, type = 'sed_rate')
-summary(age_model, type = 'dates')
-summary(age_model, type = 'hiatus')
-summary(age_model, type = 'anchor')
+summary(age_model, type = 'sed_rate') # sedimentation rate for each layer
+summary(age_model, type = 'dates')    # posterior distribution of age at dated positions
+summary(age_model, type = 'hiatus')   # hiatus duration (if present)
+summary(age_model, type = 'anchor')   # age of the top-most point in the section
 ```
 
 

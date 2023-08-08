@@ -22,13 +22,13 @@ devtools::install_github('robintrayler/astroBayes')
 
 First, load `astroBayes`. 
 
-```
+```r
 library(astroBayes)
 ```
 
 `astroBayes` includes a simple testing data set consisting of a set of radioisotopic dates, a cyclostratigraphic record, a set of target frequencies, and a set of layer boundaries. The example data can be loaded using the `data()` function. **For details on the mechanics of the `astroBayes` model and how `layer_boundaries` are selected see the manuscript linked above.** 
 
-```
+```r
 data("target_frequencies")
 data("radioisotopic_dates")
 data("cyclostratigraphic_data")
@@ -39,7 +39,7 @@ The primary function in `astroBayes` is `astro_bayes_model()`. This function use
 
 Running the model will take a few minutes to several hours depending on the number of `iterations` and the complexity of the data (number of `dates`, number of data points in the cyclostratigraphic data, and the number of layers). A progress bar should pop up in the `R` terminal with a rough estimate of time remaining. The model below takes about 25 minutes to run on a 2022 MacBook Pro with an M1 Pro processor and 32 Gb of ram.
 
-```
+```r
 age_model <- astro_bayes_model(geochron_data = dates,
                                cyclostrat_data = cyclostrat,
                                target_frequency = target_frequencies,
@@ -53,26 +53,26 @@ After the model has finished running you can visualize the results using several
 
 The `age_depth` plot shows the age-depth model as a median (black line) and 95% credible interval (shaded grey region). The dates are shown as colored normal distribution.
 
-```
+```r
 plot(age_model, type = 'age_depth')
 ```
 ![](./figures/age_depth.jpeg)
 
 You can inspect the posterior distribution of sedimentation rate, either as  kernel density estimates or as trace plots. 
 
-```
+```r
 plot(age_model, type = 'sed_rate')
 ```
 ![](./figures/sed_rate.jpeg)
 
-```
+```r
 plot(age_model, type = 'trace')
 ```
 ![](./figures/trace.jpeg)
 
 You can also check for quality of the model fit by comparing a periodogram of the data with the age model applied. The target frequencies uses are shown as vertical dashed lines. 
 
-```{r}
+```r
 plot(age_model, type = 'periodogram')
 ```
 ![](./figures/periodogram.jpeg)
@@ -81,7 +81,7 @@ plot(age_model, type = 'periodogram')
 
 `astroBayes` can predict the age of stratigraphic points within the bounds of the age-depth model. Predictions us the `predict()` function. Positions to predict should be stored in a data frame with three columns: `position`, `thickness`, and `id`. 
 
-```
+```r
 # define some positions to predict 
 new_positions <- data.frame(position = c(5, 10, 15), 
                             thickness = c(1, 0, 1), 
@@ -94,7 +94,7 @@ The output of `predict(age_model, new_positions)` is a `list()` with two entries
 
 You can plot the predictions using `plot()`. 
 
-```
+```r
 plot(predictions)
 ```
 ![](./figures/predictions.jpeg)
@@ -103,7 +103,7 @@ plot(predictions)
 
 Several `summary()` functions are available to extract the 95% credible interval for different model parameters.
 
-```
+```r
 summary(age_model, type = 'sed_rate') # sedimentation rate for each layer
 summary(age_model, type = 'dates')    # posterior distribution of age at dated positions
 summary(age_model, type = 'hiatus')   # hiatus duration (if present)

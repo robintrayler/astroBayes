@@ -42,8 +42,8 @@ Running the model will take a few minutes to several hours depending on the numb
 ```
 age_model <- astro_bayes_model(geochron_data = dates,
                                cyclostrat_data = cyclostrat,
-                               tuning_frequency = target_frequencies,
-                               segment_edges = layer_boundaries,
+                               target_frequency = target_frequencies,
+                               layer_boundaries = layer_boundaries,
                                iterations = 10000,
                                burn = 1000)
 ```

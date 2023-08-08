@@ -104,10 +104,10 @@ plot(predictions)
 There are several summary types available in `astroBayes`. Each returns the 95% credible interval of the relevant model parameters. 
 
 ```
-summmary(age_model, type = 'sed_rate')
-summmary(age_model, type = 'dates')
-summmary(age_model, type = 'hiatus')
-summmary(age_model, type = 'anchor')
+summary(age_model, type = 'sed_rate')
+summary(age_model, type = 'dates')
+summary(age_model, type = 'hiatus')
+summary(age_model, type = 'anchor')
 ```
 
 

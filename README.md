@@ -1,4 +1,5 @@
 # astroBayes
+[![DOI](https://zenodo.org/badge/375167562.svg)](https://zenodo.org/badge/latestdoi/375167562)
 
 `astroBayes` is a Bayesian framework for combining radioisotopic dates and cyclostratigraphic data into age-depth models. The background of the modeling framework and details of model construction are covered in: 
 

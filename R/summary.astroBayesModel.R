@@ -66,6 +66,10 @@ summarize_hiatus <- function(age_model) {
     median   = vector(length = n_hiatus),
     CI_97.5  = vector(length = n_hiatus))
 
+  if(n_hiatus < 1) {
+    stop('model does not include any hiatus(es)')
+  }
+
   if(n_hiatus > 0) {
 
     # loop through the hiatuses

@@ -1,0 +1,20 @@
+cff-version: 1.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Trayler"
+  given-names: "Robin B"
+  orcid: "https://orcid.org/0-0001-8964-4045"
+- family-names: "Meyers"
+  given-names: "Stephen R"
+  orcid: "https://orcid.org/0000-0003-4422-720X"
+- family-names: "Sageman"
+  given-names: "Bradley B"
+  orcid: "https://orcid.org/0000-0001-5397-6654"
+- family-names: "Schmitz"
+  given-names: "Mark D"
+  orcid: "https://orcid.org/0000-0003-2888-0321"
+title: "astroBayes: Bayesian Integration of Astrochronology and Radioisotope Geochronology"
+version: 1.0.0
+doi: 10.5281/zenodo.8226540
+date-released: 2023-8-2023
+url: "https://github.com/robintrayler/astroBayes"

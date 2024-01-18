@@ -500,7 +500,7 @@ astro_bayes_model <- function(geochron_data,
                 model_iterations = model_storage,    # individual age models
                 sed_rate = sed_rate,                 # sedimentation rate chains
                 layer_boundaries = master_edges,     # layer_boundaries input
-                layer_storage = layer_storage,     # layer boundary positions
+                layer_storage = layer_storage,       # layer boundary positions
                 geochron_data = master_geochron,     # geochron input
                 cyclostrat_data = cyclostrat_data,   # cyclostrat_data input
                 target_frequency = target_frequency, # target frequencies input

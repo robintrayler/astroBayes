@@ -3,9 +3,9 @@
 
 `astroBayes` is a Bayesian framework for combining radioisotopic dates and cyclostratigraphic data into age-depth models. The background of the modeling framework and details of model construction are covered in: 
 
-**Trayler, R. B., Meyers, S. R., Sageman, B. B., Schmitz, M. D., (in prep) *Bayesian Integration of Astrochronology and Radioisotope Geochronology***. 
+**Trayler, R. B., Meyers, S. R., Sageman, B. B., Schmitz, M. D., (2024), *Bayesian Integration of Astrochronology and Radioisotope Geochronology*: Geochronology, v. 6, p. 107–123, doi:10.5194/gchron-6-107-2024.**
 
-A draft version of this manuscript is available at [github.com/robintrayler/astroBayes_manuscript](https://github.com/robintrayler/astroBayes_manuscript). 
+An unformatted version of this manuscript and the necessary code is available at [github.com/robintrayler/astroBayes_manuscript](https://github.com/robintrayler/astroBayes_manuscript). 
 
 ## Installation
 

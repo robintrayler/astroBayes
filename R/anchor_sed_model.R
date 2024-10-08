@@ -5,7 +5,7 @@ anchor_sed_model <- function(layer_boundaries,
                                     position_grid) {
 
   # INPUTS:
-  # layer_boundaries: a data frame of segment boundaries
+  # layer_boundaries: a data frame of layer boundaries
   # sed_rate: a vector of n sedimentation rates that correspond to each segment
   # anchor_point: a vector of length 1 that anchors the top of the model
   # hiatus_duration: a vector of length n, that contains the duration of n

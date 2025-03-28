@@ -169,7 +169,7 @@ plot_pgram <- function(age_model) {
                   output = 1,
                   padfac = 10) |>
       ggplot(mapping = aes(x = Frequency,
-                           y = Power)) +
+                           y = Amplitude)) +
       geom_line(color = colors[i]) +
       geom_line(mapping = aes(y = AR1_Fit),
                 color = 2,
@@ -185,7 +185,7 @@ plot_pgram <- function(age_model) {
                  size = 0.5) +
       xlab('Frequency (cycles/Ma)') +
       xlim(0, max(age_model$target_frequency$frequency)) +
-      ylab('Spectral Power') +
+      ylab('Amplitude') +
       theme(panel.grid = element_blank())
   }
 
